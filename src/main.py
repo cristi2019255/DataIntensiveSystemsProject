@@ -1,4 +1,7 @@
+from math import dist
 from operator import add
+from pandas import DataFrame
+from pyspark.sql.functions import col, countDistinct
 from functools import reduce
 from pyspark.sql import SparkSession
 from pyspark.ml.clustering import KMeans
@@ -16,6 +19,17 @@ import pyspark.sql.types as T
 
 DATASET_PATH = "data/imdbProfiles.csv"
 COLUMN_NAMES = ["id", "title", "starring", "writer", "editor"]
+CLUSTER_COUNT = 3
+
+
+def ColumnCountHomogenity(cluster: DataFrame):
+    # Count distinct values in columns
+    distinct = cluster.agg(*(countDistinct(col(column)).alias(column)
+                             for column in cluster.columns))
+    distinct.show()
+    counts = distinct.collect()[0]
+    homogenity = 1 - sum(counts) / (len(counts) * cluster.count())
+    return homogenity
 
 
 def main():
@@ -32,7 +46,7 @@ def main():
     )
 
     df = spark.read.csv(DATASET_PATH, header=True,
-                        sep='|', schema=schema)
+                        sep='|', schema=schema).limit(100)
 
     # Replace null with empty string
     df = df.fillna("")
@@ -58,14 +72,32 @@ def main():
     similarities.show()
 
     similaritiesRdd = similarities.rdd.map(
-        lambda id1, id2, levenshtein: [int(id1), int(id2), float(levenshtein)])
+        lambda row: [int(row["id"]), int(row["id_2"]), float(row["levenshtein"])])
 
     # Clustering
     model = PowerIterationClustering.train(
-        similaritiesRdd, k=5, maxIterations=10)
+        similaritiesRdd, k=CLUSTER_COUNT, maxIterations=10)
+    assignments = model.assignments().toDF()
 
-    # model.assignments().foreach(lambda x: print(str(x.id) + " -> " + str(x.cluster)))
+    # Join the clusters with the initial dataframe
+    df = df.join(assignments, "id")
+    df.show()
 
+    homogenity = 0
+    for clusterId in range(0, CLUSTER_COUNT):
+        clusterDf = df.where(df["cluster"] == clusterId)
+        clusterHomo = ColumnCountHomogenity(clusterDf.drop("cluster"))
+        print(f"Cluster {clusterId}: {clusterHomo}")
+        homogenity += clusterHomo
+
+    print("Clustered homogenity:")
+    print(homogenity/CLUSTER_COUNT)
+
+    print("Total homogenity:")
+    print(ColumnCountHomogenity(df.drop("cluster")))
+
+    # df.groupBy("cluster").
+    # .count().show()
     # Save and load model
     # model.save(
     #     sc, "target/org/apache/spark/PythonPowerIterationClusteringExample/PICModel")
