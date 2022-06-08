@@ -1,7 +1,6 @@
 from math import dist
 from operator import add
 from pandas import DataFrame
-from pyspark.sql.functions import col, countDistinct
 from functools import reduce
 from pyspark.sql import SparkSession
 from pyspark.ml.clustering import KMeans
@@ -16,15 +15,25 @@ from pyspark.mllib.clustering import PowerIterationClustering, PowerIterationClu
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
 
-
+# Variables
 DATASET_PATH = "data/imdbProfiles.csv"
 COLUMN_NAMES = ["id", "title", "starring", "writer", "editor"]
 CLUSTER_COUNT = 3
+CLUSTER_ITERATIONS = 10
+
+# Constants
+ID_COLUMN = "uniqueId"
+LEVENSHTEIN_COLUMN = "levenshtein"
+CLUSTER_COLUMN = "cluster"
+
+LEFT_COLUMN = "_1"
+RIGHT_COLUMN = "_2"
+L_COLUMN = "_l"
 
 
 def ColumnCountHomogenity(cluster: DataFrame):
     # Count distinct values in columns
-    distinct = cluster.agg(*(countDistinct(col(column)).alias(column)
+    distinct = cluster.agg(*(F.countDistinct(F.col(column)).alias(column)
                              for column in cluster.columns))
     distinct.show()
     counts = distinct.collect()[0]
@@ -35,21 +44,19 @@ def ColumnCountHomogenity(cluster: DataFrame):
 def main():
     # starting Sprak session
     spark = SparkSession.builder.appName("SimpleApp").getOrCreate()
-    sc = spark.sparkContext
 
     # Reading the data from the csv
     schema = StructType(
         StructType(
-            [StructField(columnName, StringType(), True)
+            [StructField(columnName, StringType(), False)
              for columnName in COLUMN_NAMES]
         )
     )
-
-    df = spark.read.csv(DATASET_PATH, header=True,
-                        sep='|', schema=schema).limit(100)
-
-    # Replace null with empty string
-    df = df.fillna("")
+    df = spark.read\
+        .csv(DATASET_PATH, header=True, sep='|', schema=schema)\
+        .fillna("")\
+        .withColumn(ID_COLUMN, F.monotonically_increasing_id())\
+        .limit(100)
 
     # Print some data information.
     print("General data")
@@ -58,35 +65,36 @@ def main():
 
     # Train the model.
     print("Training the model")
-    joined = df.crossJoin(
-        reduce(lambda df, columnName: df.withColumnRenamed(columnName, f"{columnName}_2"), COLUMN_NAMES, df))
+    joined = df.toDF(*[columnName + LEFT_COLUMN for columnName in COLUMN_NAMES], ID_COLUMN + LEFT_COLUMN).crossJoin(
+        df.toDF(*[f"{columnName}{RIGHT_COLUMN}" for columnName in COLUMN_NAMES], ID_COLUMN + RIGHT_COLUMN))
     joined.show()
-    levenshteined = reduce(lambda df, columnName: df.withColumn(
-        f"{columnName}_l", F.levenshtein(F.col(columnName), F.col(f"{columnName}_2"))), COLUMN_NAMES, joined)
+    levenshteined = joined.select("*", *[F.levenshtein(F.col(columnName + LEFT_COLUMN), F.col(
+        columnName + RIGHT_COLUMN)).alias(columnName + L_COLUMN) for columnName in COLUMN_NAMES])
     levenshteined.show()
     levenshteinedSummed = levenshteined.withColumn(
-        "levenshtein", sum([F.col(f"{columnName}_l") for columnName in COLUMN_NAMES]))
+        LEVENSHTEIN_COLUMN, sum([F.col(columnName + L_COLUMN) for columnName in COLUMN_NAMES]))
     levenshteinedSummed.show()
     similarities = levenshteinedSummed.select(
-        ["id", "id_2", "levenshtein"])
+        [ID_COLUMN + LEFT_COLUMN, ID_COLUMN + RIGHT_COLUMN, LEVENSHTEIN_COLUMN])
     similarities.show()
 
     similaritiesRdd = similarities.rdd.map(
-        lambda row: [int(row["id"]), int(row["id_2"]), float(row["levenshtein"])])
+        lambda row: [int(row[ID_COLUMN + LEFT_COLUMN]), int(row[ID_COLUMN + RIGHT_COLUMN]), float(row[LEVENSHTEIN_COLUMN])])
 
     # Clustering
     model = PowerIterationClustering.train(
-        similaritiesRdd, k=CLUSTER_COUNT, maxIterations=10)
-    assignments = model.assignments().toDF()
+        similaritiesRdd, k=CLUSTER_COUNT, maxIterations=CLUSTER_ITERATIONS)
+    assignments = model.assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)
 
     # Join the clusters with the initial dataframe
-    df = df.join(assignments, "id")
+    df = df.join(assignments, ID_COLUMN)
     df.show()
 
     homogenity = 0
     for clusterId in range(0, CLUSTER_COUNT):
-        clusterDf = df.where(df["cluster"] == clusterId)
-        clusterHomo = ColumnCountHomogenity(clusterDf.drop("cluster"))
+        clusterDf = df.where(df[CLUSTER_COLUMN] == clusterId)
+        clusterHomo = ColumnCountHomogenity(
+            clusterDf.drop(ID_COLUMN, CLUSTER_COLUMN))
         print(f"Cluster {clusterId}: {clusterHomo}")
         homogenity += clusterHomo
 
@@ -94,7 +102,7 @@ def main():
     print(homogenity/CLUSTER_COUNT)
 
     print("Total homogenity:")
-    print(ColumnCountHomogenity(df.drop("cluster")))
+    print(ColumnCountHomogenity(df.drop(ID_COLUMN, CLUSTER_COLUMN)))
 
     # df.groupBy("cluster").
     # .count().show()
