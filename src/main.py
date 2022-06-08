@@ -1,4 +1,5 @@
-from pyspark.sql.functions import log2 
+import shutil
+import os
 from pandas import DataFrame
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
@@ -7,10 +8,13 @@ from pyspark.sql.types import StructType, StructField, StringType
 from pyspark.mllib.clustering import PowerIterationClustering, PowerIterationClusteringModel
 import pyspark.sql.functions as F
 
+from homogenity import generateEntropyColumnHomogenity, generateColumnCountHomogenity
+
 # Variables
 DATASET_PATH = "data/imdbProfiles.csv"
+CLUSTER_MODEL_PATH = "results/PICModel"
 COLUMN_NAMES = ["id", "title", "starring", "writer", "editor"]
-CLUSTER_COUNT = 5
+CLUSTER_COUNT = 6
 CLUSTER_ITERATIONS = 10
 
 # Constants
@@ -23,29 +27,6 @@ RIGHT_COLUMN = "_2"
 L_COLUMN = "_l"
 
 
-def ColumnCountHomogenity(cluster: DataFrame):
-    # Count distinct values in columns
-    distinct = cluster.agg(*(F.countDistinct(F.col(column)).alias(column)
-                             for column in cluster.columns))
-    distinct.show()
-    counts = distinct.collect()[0]
-    homogenity = 1 - sum(counts) / (len(counts) * cluster.count())
-    return homogenity
-
-
-def EntropyColumnHomogenity(df: DataFrame):    
-    size = df.count()
-    
-    entropy_sum = 0
-    for c in df.columns:
-        E = df.groupby(c).count().withColumn('entropy', F.col("count") / size * log2(F.col("count") / size))        
-        entropy = - (E.agg({'entropy': 'sum'}).collect()[0][0])
-        entropy_sum += entropy
-            
-    return 1 / entropy_sum
-
-
-HOMOGENEITY = ColumnCountHomogenity
 
 def create_session():
     # starting Sprak session
@@ -100,14 +81,16 @@ def train_clusterer(df:DataFrame,sc:SparkContext):
     model = PowerIterationClustering.train(
         similaritiesRdd, k=CLUSTER_COUNT, maxIterations=CLUSTER_ITERATIONS)
             
-    # Save the model
-    model.save(sc, "results/PICModel")
+    # Save the model    
+    if os.path.exists(CLUSTER_MODEL_PATH) and os.path.isdir(CLUSTER_MODEL_PATH):
+        shutil.rmtree(CLUSTER_MODEL_PATH)
+        
+    model.save(sc, CLUSTER_MODEL_PATH)
     
 def load_clusterer(sc):
-    model = PowerIterationClusteringModel.load(sc, "results/PICModel")        
-    return model
+    return PowerIterationClusteringModel.load(sc, "results/PICModel")            
 
-def clusters_homogeneity(df:DataFrame, assignments, homogeneity = HOMOGENEITY):
+def clusters_homogeneity(df:DataFrame, assignments, homogeneity):
     # Join the clusters with the initial dataframe
     df = df.join(assignments, ID_COLUMN)
     df.show()
@@ -133,13 +116,19 @@ def main():
     
     assignments = load_clusterer(sc).assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)        
 
-    homogeneity = EntropyColumnHomogenity #HOMOGENEITY
-    
-    print("Total homogenity:")
-    
-    print(homogeneity(df.drop(ID_COLUMN, CLUSTER_COLUMN)))    
+    distinct = df.agg(*(F.countDistinct(F.col(column)).alias(column)
+                             for column in df.columns))
+    distinct.show()
+    N_counts = distinct.collect()[0]
 
-    clusters_homogeneity(df, assignments, homogeneity=homogeneity)
+    homogeneity_func = generateEntropyColumnHomogenity(N_counts) #HOMOGENEITY
+    
+
+    print("Total homogenity:")    
+    print(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN)))    
+
+
+    clusters_homogeneity(df, assignments, homogeneity=homogeneity_func)
 
 if __name__ == '__main__':
     main()
