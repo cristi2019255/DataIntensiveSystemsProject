@@ -19,21 +19,14 @@ def create_session():
 
 def read_data(spark):
     # Reading the data from the csv
-    schema = StructType(
-        StructType(
-            [StructField(columnName, StringType(), False)
-             for columnName in COLUMN_NAMES]
-        )
-    )
-
-    df = spark.read.csv(DATASET_PATH, header=True, sep='|', schema=schema)\
+    df = spark.read.csv(DATASET_PATH, header=True, sep='|')\
         .fillna("")\
         .withColumn(ID_COLUMN, F.monotonically_increasing_id())\
         .limit(100)
 
     # Print some data information.
-    #print("General data")
-    #df.printSchema()
+    print("General data")
+    df.printSchema()
     #df.summary().show()
 
     return df
@@ -65,11 +58,11 @@ def main():
     df = read_data(spark)
     
     #Running the experiments
-    cluster_assignments = cluster_partitioning(df, sc, CLUSTER_COUNT)
+    cluster_assignments = cluster_partitioning(df, sc, CLUSTER_COUNT, train=True)
     partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
 
     # Evaluating approaches
-    homogeneity_func = generateColumnCountHomogenity(df)  # Generating the homogeneity function
+    homogeneity_func = generateEntropyColumnHomogenity(df) # Generating the homogeneity function
     evaluate_partition(df, partition = cluster_assignments, homogeneity=homogeneity_func, clustering = True)
     evaluate_partition(df, partition = partition, homogeneity=homogeneity_func)    
     print("\nTotal homogenity: " + str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN))))

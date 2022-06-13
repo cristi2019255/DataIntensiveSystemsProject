@@ -1,9 +1,11 @@
+from datetime import datetime
 import pyspark.sql.functions as F
 from constants import *
 from pyspark.sql import DataFrame
 
 def greedy_partitioning(df: DataFrame, k: int):
-
+    print("\nGreedy partitioning...")
+    start_time = datetime.now()
     # columns_counts = [df.groupby(c).count().sort(F.col("count"), ascending=False).collect() for c in df.columns]
     # maximum = max([max(x, key=lambda y:y[1] for x in columns_counts], key=lambda x: x[1])
 
@@ -57,4 +59,7 @@ def greedy_partitioning(df: DataFrame, k: int):
         clusters.append(outPart)
 
     # [c.show() for c in clusters]
+    
+    end_time = datetime.now()
+    print(f"\nTime taken: {end_time - start_time}")
     return clusters

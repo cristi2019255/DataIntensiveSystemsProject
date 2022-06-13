@@ -1,9 +1,10 @@
+from datetime import datetime
 import os
 import shutil
 
 import pyspark.sql.functions as F
 from constants import *
-from pandas import DataFrame
+from pyspark.sql import DataFrame
 from pyspark import SparkContext
 from pyspark.mllib.clustering import (PowerIterationClustering,
                                       PowerIterationClusteringModel)
@@ -11,7 +12,9 @@ from pyspark.mllib.clustering import (PowerIterationClustering,
 
 def train_clusterer(df: DataFrame, sc: SparkContext, k:int):
     # Train the model.
-    print("Training the model")
+    COLUMN_NAMES = df.columns[:-1]
+    print("Training the model...")
+    start_time = datetime.now()
     joined = df.toDF(*[columnName + LEFT_COLUMN for columnName in COLUMN_NAMES], ID_COLUMN + LEFT_COLUMN).crossJoin(
         df.toDF(*[f"{columnName}{RIGHT_COLUMN}" for columnName in COLUMN_NAMES], ID_COLUMN + RIGHT_COLUMN))
     joined.show()
@@ -24,8 +27,7 @@ def train_clusterer(df: DataFrame, sc: SparkContext, k:int):
         LEVENSHTEIN_COLUMN, sum([F.col(columnName + L_COLUMN) for columnName in COLUMN_NAMES]))
     levenshteinedSummed.show()
 
-    similarities = levenshteinedSummed.select(
-        [ID_COLUMN + LEFT_COLUMN, ID_COLUMN + RIGHT_COLUMN, LEVENSHTEIN_COLUMN])
+    similarities = levenshteinedSummed.select([ID_COLUMN + LEFT_COLUMN, ID_COLUMN + RIGHT_COLUMN, LEVENSHTEIN_COLUMN]).where(f"{ID_COLUMN + LEFT_COLUMN}<{ID_COLUMN + RIGHT_COLUMN}")
     similarities.show()
 
     similaritiesRdd = similarities.rdd.map(
@@ -40,6 +42,8 @@ def train_clusterer(df: DataFrame, sc: SparkContext, k:int):
         shutil.rmtree(CLUSTER_MODEL_PATH)
 
     model.save(sc, CLUSTER_MODEL_PATH)
+    end_time = datetime.now()
+    print(f"Training time: {end_time - start_time}")
 
 
 def cluster_partitioning(df, sc, k:int, train = False):

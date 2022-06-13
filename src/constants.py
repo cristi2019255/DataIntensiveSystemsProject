@@ -1,8 +1,7 @@
 
 # Variables
-DATASET_PATH = "data/imdbProfiles.csv"
+DATASET_PATH = "data/dbpediaProfiles.csv"
 CLUSTER_MODEL_PATH = "results/PICModel"
-COLUMN_NAMES = ["id", "title", "starring", "writer", "editor"]
 CLUSTER_COUNT = 4
 CLUSTER_ITERATIONS = 10
 
