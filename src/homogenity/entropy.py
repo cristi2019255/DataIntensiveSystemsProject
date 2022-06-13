@@ -1,12 +1,15 @@
 
 import math
-from pandas import DataFrame
 from pyspark.sql.functions import log2
 import pyspark.sql.functions as F
+from pyspark.sql import DataFrame
 
-
-def generateEntropyColumnHomogenity(N_counts):
-
+def generateEntropyColumnHomogenity(df:DataFrame):
+    distinct = df.agg(*(F.countDistinct(F.col(column)).alias(column)
+                        for column in df.columns))
+    
+    N_counts = distinct.collect()[0]
+    
     def EntropyColumnHomogenity(df: DataFrame):
         size = df.count()
 

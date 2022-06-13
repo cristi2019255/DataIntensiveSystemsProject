@@ -1,14 +1,17 @@
 import pyspark.sql.functions as F
-from pandas import DataFrame
+from pyspark.sql import DataFrame
 
+def generateColumnCountHomogenity(df: DataFrame):
+    distinct = df.agg(*(F.countDistinct(F.col(column)).alias(column)
+                        for column in df.columns))
 
-def generateColumnCountHomogenity(N_counts):
-
+    N_counts = distinct.collect()[0]
+    
     def ColumnCountHomogenity(cluster: DataFrame):
         # Count distinct values in columns
         distinct = cluster.agg(*(F.countDistinct(F.col(column)).alias(column)
                                  for column in cluster.columns))
-        distinct.show()
+        #distinct.show()
 
         counts = distinct.collect()[0]
 

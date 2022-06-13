@@ -1,66 +1,8 @@
 import pyspark.sql.functions as F
 from constants import *
-
 from pyspark.sql import DataFrame
 
-
-def greedy_heuristic(df: DataFrame, k: int, homogenity):
-    df = df.drop(ID_COLUMN)
-    df_left = df.select('*')
-
-    columns_counts = [df.groupby(c).count().sort(
-        F.col("count"), ascending=False).collect() for c in df.columns]
-
-    parts = []
-    for _ in range(k):
-        maximum = max([max(x, key=lambda y:y[1])
-                      for x in columns_counts], key=lambda x: x[1])
-
-        max_attr_val = maximum[0]
-        col = list(maximum.asDict().keys())[0]
-
-        parts.append(df.where(df[col] == max_attr_val))
-        df_left = df_left.where(df[col] != max_attr_val)
-
-        columns_counts = [df_left.groupby(c).count().sort(
-            F.col("count"), ascending=False).collect() for c in df.columns]
-
-        parts[-1].show()
-
-    while df_left.count() != 0:
-        # until partition is not complete for each part add the subparts the increases homogenity the most
-
-        # getting the maximum homogen subpart over column
-        maximum = max([max(x, key=lambda y:y[1])
-                      for x in columns_counts], key=lambda x: x[1])
-        max_attr_val = maximum[0]
-        col = list(maximum.asDict().keys())[0]
-
-        subpart = df.where(df[col] == max_attr_val)
-        # searching the part that increases homogenity the most with the subpart
-        best_part = 0
-        homogenity_best = 0
-        for i in range(k):
-            homo = homogenity(parts[i].union(subpart))
-            if homo > homogenity_best:
-                homogenity_best = homo
-                best_part = i
-
-        # merging subpart with the part
-        parts[best_part] = parts[best_part].union(subpart)
-        parts[best_part].show()
-        # removing the subpart from the dataframe
-        df_left = df_left.where(df[col] != max_attr_val)
-        # removing the subpart from column_counts
-        columns_counts = [df_left.groupby(c).count().sort(
-            F.col("count"), ascending=False).collect() for c in df.columns]
-
-        print(df_left.count())
-
-    return parts
-
-
-def greedy(df: DataFrame, k: int, homogenity):
+def greedy_partitioning(df: DataFrame, k: int):
 
     # columns_counts = [df.groupby(c).count().sort(F.col("count"), ascending=False).collect() for c in df.columns]
     # maximum = max([max(x, key=lambda y:y[1] for x in columns_counts], key=lambda x: x[1])

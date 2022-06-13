@@ -1,17 +1,14 @@
 import pyspark.sql.functions as F
-from pandas import DataFrame
 from pyspark import SparkContext
-from pyspark.mllib.clustering import (PowerIterationClustering,
-                                      PowerIterationClusteringModel)
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 
-from clustering.greedy import greedy, greedy_heuristic
+from clustering.greedy import greedy_partitioning
+from clustering.pic import cluster_partitioning
 from constants import *
+from homogenity.columnCount import generateColumnCountHomogenity
 from homogenity.entropy import generateEntropyColumnHomogenity
-
-# from homogenity import generateEntropyColumnHomogenity, generateColumnCountHomogenity
-
 
 def create_session():
     # starting Sprak session
@@ -35,65 +32,47 @@ def read_data(spark):
         .limit(100)
 
     # Print some data information.
-    print("General data")
-    df.printSchema()
-    df.summary().show()
+    #print("General data")
+    #df.printSchema()
+    #df.summary().show()
 
     return df
 
 
-def clusters_homogeneity(df: DataFrame, assignments, homogeneity):
-    # Join the clusters with the initial dataframe
-    df = df.join(assignments, ID_COLUMN)
-    df.show()
-
+def evaluate_partition(df, homogeneity, partition = None, clustering = False):
     homogeneity_sum = 0
-
-    for clusterId in range(0, CLUSTER_COUNT):
-        clusterHomo = homogeneity(
-            df.where(df[CLUSTER_COLUMN] == clusterId).drop(ID_COLUMN, CLUSTER_COLUMN))
-        print(f"Cluster {clusterId}: {clusterHomo}")
-        homogeneity_sum += clusterHomo
-
-    print("Clustered homogenity:")
-    print(homogeneity_sum / CLUSTER_COUNT)
-
-
-def evaluate_partition(homogeneity, partition):
-    homogeneity_sum = 0
-    for i in range(len(partition)):
-        homo = homogeneity(partition[i])
-        print(f"Part {i}, homogenity: {homo}")
-        homogeneity_sum += homo
-
-    avg = homogeneity_sum/len(partition)
-    print(f"Avg per partition:{avg}")
+    
+    if clustering:        
+        print("\nClustering approach:\n")
+        df = df.join(partition, ID_COLUMN)
+        for clusterId in range(0, CLUSTER_COUNT):
+            homo = homogeneity(df.where(df[CLUSTER_COLUMN] == clusterId).drop(ID_COLUMN, CLUSTER_COLUMN))
+            print(f"Cluster {clusterId}, homogenity: {homo}")
+            homogeneity_sum += homo        
+    else:
+        print("\nGreedy partitioning approach:\n")
+        for i in range(len(partition)):
+            homo = homogeneity(partition[i])
+            print(f"Cluster {i}, homogenity: {homo}")
+            homogeneity_sum += homo
+    
+    avg = homogeneity_sum/CLUSTER_COUNT
+    print(f"Avg per partition:{avg}\n\n")
 
 
 def main():
     spark, sc = create_session()
-
     df = read_data(spark)
+    
+    #Running the experiments
+    cluster_assignments = cluster_partitioning(df, sc, CLUSTER_COUNT)
+    partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
 
-    # train_clusterer(df, sc) # run it only once to train the model and then comment and just load the model for faster experiments
-
-    #assignments = load_clusterer(sc).assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)
-
-    distinct = df.agg(*(F.countDistinct(F.col(column)).alias(column)
-                        for column in df.columns))
-    distinct.show()
-    N_counts = distinct.collect()[0]
-
-    homogeneity_func = generateEntropyColumnHomogenity(N_counts)  # HOMOGENEITY
-
-    #clusters_homogeneity(df, assignments, homogeneity=homogeneity_func)
-
-    partition = greedy(df, CLUSTER_COUNT, homogeneity_func)
-
-    print("Total homogenity:")
-    print(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN)))
-
-    evaluate_partition(partition=partition, homogeneity=homogeneity_func)
+    # Evaluating approaches
+    homogeneity_func = generateColumnCountHomogenity(df)  # Generating the homogeneity function
+    evaluate_partition(df, partition = cluster_assignments, homogeneity=homogeneity_func, clustering = True)
+    evaluate_partition(df.drop(ID_COLUMN), partition = partition, homogeneity=homogeneity_func)    
+    print("\nTotal homogenity: " + str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN))))
 
 
 if __name__ == '__main__':
