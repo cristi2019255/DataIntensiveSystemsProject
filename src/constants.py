@@ -3,7 +3,7 @@
 DATASET_PATH = "data/imdbProfiles.csv"
 CLUSTER_MODEL_PATH = "results/PICModel"
 COLUMN_NAMES = ["id", "title", "starring", "writer", "editor"]
-CLUSTER_COUNT = 6
+CLUSTER_COUNT = 4
 CLUSTER_ITERATIONS = 10
 
 # Constants

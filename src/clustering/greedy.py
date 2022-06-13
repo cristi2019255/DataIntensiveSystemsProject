@@ -67,41 +67,45 @@ def greedy(df: DataFrame, k: int, homogenity):
 
     clusters = [df]
 
-    for i in range(k):
+    # need to split k-1 times.
+    for _ in range(k-1):
 
-        max_cluster = max_col = max_col_val = max_count = None
+        #  initialize max to None
+        max_cluster = max_col_name = max_col_val = max_product = None
 
+        # Loop over all clusters
         for cluster in clusters:
 
-            cluster.show()
-            columns_counts = [cluster.groupby(c).count()
+            # Get the column counts for the current cluster
+            columns_counts = [(c, cluster.groupby(c).count())
                               for c in cluster.drop(ID_COLUMN).columns]
 
-            for column_counts in columns_counts:
+            # Loop over all columns in the cluster
+            for (col_name, column_counts) in columns_counts:
 
                 # max column count
-                in_count = column_counts.rdd.max(lambda x: x[1])
-                out_count = column_counts.where(
-                    lambda count: max_col[0] != count[0]).sum(lambda count: count[1])
+                count_dict = column_counts.rdd.max(lambda x: x[1]).asDict()
+                col_val = count_dict[col_name]
+
+                in_count = count_dict["count"]
+                out_count = column_counts.rdd.filter(
+                    lambda row: row[col_name] != col_val).map(lambda row: row["count"]).sum()
                 product = in_count * out_count
 
-                maximumColumnValue = max(columns_counts, key=lambda x: x[1])
-
-                col_val, col = maximumColumnValue[0], list(
-                    maximumColumnValue.asDict().keys())[0]
-                col_count = maximumColumnValue[1]
-
-                if (max_count == None or col_count > max_count):
+                # if the current column product is higher than the max, set it as the max.
+                if (max_product == None or product > max_product):
                     max_cluster = cluster
-                    max_col = col
+                    max_col_name = col_name
                     max_col_val = col_val
-                    max_count = col_count
+                    max_product = product
 
-        print(max_col)
-        print(max_col_val)
+        print("col_name: ", max_col_name, " col_val: \"",
+              max_col_val, "\"", " product: ", max_product)
 
-        inPart = max_cluster.where(max_cluster[max_col] == max_col_val)
-        outPart = max_cluster.where(max_cluster[max_col] != max_col_val)
+        inPart = max_cluster.rdd.filter(
+            lambda row: row[max_col_name] == max_col_val).toDF()
+        outPart = max_cluster.rdd.filter(
+            lambda row: row[max_col_name] != max_col_val).toDF()
 
         # Remove the old splitted cluster
         clusters.remove(max_cluster)
