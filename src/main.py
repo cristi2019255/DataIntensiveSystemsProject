@@ -52,7 +52,7 @@ def evaluate_partition(df, homogeneity, partition = None, clustering = False):
     else:
         print("\nGreedy partitioning approach:\n")
         for i in range(len(partition)):
-            homo = homogeneity(partition[i])
+            homo = homogeneity(partition[i].drop(ID_COLUMN))
             print(f"Cluster {i}, homogenity: {homo}")
             homogeneity_sum += homo
     
@@ -71,7 +71,7 @@ def main():
     # Evaluating approaches
     homogeneity_func = generateColumnCountHomogenity(df)  # Generating the homogeneity function
     evaluate_partition(df, partition = cluster_assignments, homogeneity=homogeneity_func, clustering = True)
-    evaluate_partition(df.drop(ID_COLUMN), partition = partition, homogeneity=homogeneity_func)    
+    evaluate_partition(df, partition = partition, homogeneity=homogeneity_func)    
     print("\nTotal homogenity: " + str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN))))
 
 
