@@ -99,8 +99,8 @@ def greedy(df: DataFrame, k: int, homogenity):
                     max_col_val = col_val
                     max_product = product
 
-        print("col_name: ", max_col_name, " col_val: \"",
-              max_col_val, "\"", " product: ", max_product)
+        # print("col_name: ", max_col_name, " col_val: \"",
+        #       max_col_val, "\"", " product: ", max_product)
 
         inPart = max_cluster.rdd.filter(
             lambda row: row[max_col_name] == max_col_val).toDF()
@@ -114,4 +114,5 @@ def greedy(df: DataFrame, k: int, homogenity):
         clusters.append(inPart)
         clusters.append(outPart)
 
-    [c.show() for c in clusters]
+    # [c.show() for c in clusters]
+    return clusters
