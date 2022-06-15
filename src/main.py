@@ -10,6 +10,7 @@ from constants import *
 from homogenity.columnCount import generateColumnCountHomogenity
 from homogenity.entropy import generateEntropyColumnHomogenity
 
+
 def create_session():
     # starting Sprak session
     spark = SparkSession.builder.appName("SimpleApp").getOrCreate()
@@ -27,28 +28,29 @@ def read_data(spark):
     # Print some data information.
     print("General data")
     df.printSchema()
-    #df.summary().show()
+    # df.summary().show()
 
     return df
 
 
-def evaluate_partition(df, homogeneity, partition = None, clustering = False):
+def evaluate_partition(df, homogeneity, partition=None, clustering=False):
     homogeneity_sum = 0
-    
-    if clustering:        
+
+    if clustering:
         print("\nClustering approach:\n")
         df = df.join(partition, ID_COLUMN)
         for clusterId in range(0, CLUSTER_COUNT):
-            homo = homogeneity(df.where(df[CLUSTER_COLUMN] == clusterId).drop(ID_COLUMN, CLUSTER_COLUMN))
+            homo = homogeneity(df.where(df[CLUSTER_COLUMN] == clusterId).drop(
+                ID_COLUMN, CLUSTER_COLUMN))
             print(f"Cluster {clusterId}, homogenity: {homo}")
-            homogeneity_sum += homo        
+            homogeneity_sum += homo
     else:
         print("\nGreedy partitioning approach:\n")
         for i in range(len(partition)):
             homo = homogeneity(partition[i].drop(ID_COLUMN))
             print(f"Cluster {i}, homogenity: {homo}")
             homogeneity_sum += homo
-    
+
     avg = homogeneity_sum/CLUSTER_COUNT
     print(f"Avg per partition:{avg}\n\n")
 
@@ -56,17 +58,50 @@ def evaluate_partition(df, homogeneity, partition = None, clustering = False):
 def main():
     spark, sc = create_session()
     df = read_data(spark)
-    
-    #Running the experiments
-    cluster_assignments = cluster_partitioning(df, sc, CLUSTER_COUNT, train=True)
+
+    # Running the experiments
+    cluster_assignments = cluster_partitioning(
+        df, sc, CLUSTER_COUNT, train=True)
     partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
 
     # Evaluating approaches
-    homogeneity_func = generateEntropyColumnHomogenity(df) # Generating the homogeneity function
-    evaluate_partition(df, partition = cluster_assignments, homogeneity=homogeneity_func, clustering = True)
-    evaluate_partition(df, partition = partition, homogeneity=homogeneity_func)    
-    print("\nTotal homogenity: " + str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN))))
+    # Generating the homogeneity function
+    homogeneity_func = generateEntropyColumnHomogenity(df)
+    evaluate_partition(df, partition=cluster_assignments,
+                       homogeneity=homogeneity_func, clustering=True)
+    evaluate_partition(df, partition=partition, homogeneity=homogeneity_func)
+    print(
+        f"Total homogenity: {str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN)))}")
+
+
+def example():
+    spark, _ = create_session()
+
+    # Create dataframe
+    df = spark.createDataFrame([
+        ("Shrek", "2001"),
+        ("Shrek", "2004"),
+        ("Shrek", "2007"),
+        ("Bee Movie", "2007"),
+        ("Megamind", "2010")
+    ], ["Title", "Release"])
+    df.show()
+
+    partition1 = df.where(df["Title"] == "Shrek")
+    partition2 = df.where(df["Title"] != "Shrek")
+
+    # Test homogenity
+    homogeneity_func = generateEntropyColumnHomogenity(df)
+
+    print(f"Total homogenity: {str(homogeneity_func(df))}")
+
+    print(f"partition1 homogenity: {str(homogeneity_func(partition1))}")
+    print(f"partition2 homogenity: {str(homogeneity_func(partition2))}")
+
+    partitions = greedy_partitioning(df, 2)
+    partitions[0].show()
+    partitions[1].show()
 
 
 if __name__ == '__main__':
-    main()
+    example()
