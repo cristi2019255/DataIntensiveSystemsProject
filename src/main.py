@@ -61,7 +61,7 @@ def main():
 
     # Running the experiments
     cluster_assignments = cluster_partitioning(
-        df, sc, CLUSTER_COUNT, train=True)
+        df, sc, CLUSTER_COUNT, train=False)
     partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
 
     # Evaluating approaches
@@ -87,8 +87,8 @@ def example():
     ], ["Title", "Release"])
     df.show()
 
-    partition1 = df.where(df["Title"] == "Shrek")
-    partition2 = df.where(df["Title"] != "Shrek")
+    partition1 = df.where(df["Release"] == "2007")
+    partition2 = df.where(df["Release"] != "2007")
 
     # Test homogenity
     homogeneity_func = generateEntropyColumnHomogenity(df)
@@ -104,4 +104,4 @@ def example():
 
 
 if __name__ == '__main__':
-    example()
+    main()
