@@ -2,9 +2,9 @@ import pyspark.sql.functions as F
 from pyspark import SparkContext
 
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StringType, StructField, StructType
-
+from clustering.frequent_sets import pattern_partitioning
 from clustering.greedy import greedy_partitioning
+from clustering.greedy_efficient import greedy_efficient, greedy_parameterless
 from clustering.pic import cluster_partitioning
 from constants import *
 from homogenity.columnCount import generateColumnCountHomogenity
@@ -23,10 +23,10 @@ def read_data(spark):
     df = spark.read.csv(DATASET_PATH, header=True, sep='|')\
         .fillna("")\
         .withColumn(ID_COLUMN, F.monotonically_increasing_id())\
-        .limit(100)
+        #.limit(1000)
 
     # Print some data information.
-    print("General data")
+    print("General data...")
     df.printSchema()
     # df.summary().show()
 
@@ -62,13 +62,13 @@ def main():
     # Running the experiments
     cluster_assignments = cluster_partitioning(
         df, sc, CLUSTER_COUNT, train=False)
-    partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
+    
+    partition = greedy_parameterless(df.drop(ID_COLUMN))
 
     # Evaluating approaches
     # Generating the homogeneity function
     homogeneity_func = generateEntropyColumnHomogenity(df)
-    evaluate_partition(df, partition=cluster_assignments,
-                       homogeneity=homogeneity_func, clustering=True)
+    #evaluate_partition(df, partition=cluster_assignments, homogeneity=homogeneity_func, clustering=True)
     evaluate_partition(df, partition=partition, homogeneity=homogeneity_func)
     print(
         f"Total homogenity: {str(homogeneity_func(df.drop(ID_COLUMN, CLUSTER_COLUMN)))}")
@@ -103,5 +103,26 @@ def example():
     partitions[1].show()
 
 
+def pattern_mining_approach():
+    # worth to consider, giving much faster results than the greedy approach due to highly optimization it has for spark
+    spark, _ = create_session()
+    df = read_data(spark)    
+    partition = pattern_partitioning(df, CLUSTER_COUNT)
+    homogeneity_func = generateEntropyColumnHomogenity(df)
+    evaluate_partition(df, partition=partition, homogeneity=homogeneity_func)
+
 if __name__ == '__main__':
     main()
+
+
+"""
+NOTES: greedy optimized approach is taking ~50 secs to run on the complete dataset. even though for small (like limiting dataset to 100) it is taking ~30 secs,
+       advantages are felt when the dataset is large.
+       pattern set mining is taking ~40 secs to run on the complete dataset.
+       
+TODO: improve the clustering approach, infeasible for large data now
+          decide if including the pattern set mining idea is good 
+          experiments and results
+          plots and visualizations of the results          
+"""
+       

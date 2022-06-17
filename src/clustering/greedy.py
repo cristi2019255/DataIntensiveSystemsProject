@@ -49,7 +49,7 @@ def greedy_partitioning(df: DataFrame, k: int):
         clusters.append((inPart, max_col_count, cnf))
         clusters.append((outPart, max_cluster[1] - max_col_count, old_cnf))
 
-    [print(c[2], c[0].count()) for c in clusters]
+    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
     
     end_time = datetime.now()
     print(f"\nTime taken: {end_time - start_time}")

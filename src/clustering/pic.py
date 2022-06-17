@@ -16,7 +16,7 @@ def train_clusterer(df: DataFrame, sc: SparkContext, k:int):
     print("Training the model...")
     start_time = datetime.now()
     joined = df.toDF(*[columnName + LEFT_COLUMN for columnName in COLUMN_NAMES], ID_COLUMN + LEFT_COLUMN).crossJoin(
-        df.toDF(*[f"{columnName}{RIGHT_COLUMN}" for columnName in COLUMN_NAMES], ID_COLUMN + RIGHT_COLUMN))
+        df.toDF(*[f"{columnName}{RIGHT_COLUMN}" for columnName in COLUMN_NAMES], ID_COLUMN + RIGHT_COLUMN)).where(f"{ID_COLUMN + LEFT_COLUMN}<{ID_COLUMN + RIGHT_COLUMN}")
     joined.show()
 
     levenshteined = joined.select("*", *[F.levenshtein(F.col(columnName + LEFT_COLUMN), F.col(
@@ -27,11 +27,11 @@ def train_clusterer(df: DataFrame, sc: SparkContext, k:int):
         LEVENSHTEIN_COLUMN, sum([F.col(columnName + L_COLUMN) for columnName in COLUMN_NAMES]))
     levenshteinedSummed.show()
 
-    similarities = levenshteinedSummed.select([ID_COLUMN + LEFT_COLUMN, ID_COLUMN + RIGHT_COLUMN, LEVENSHTEIN_COLUMN]).where(f"{ID_COLUMN + LEFT_COLUMN}<{ID_COLUMN + RIGHT_COLUMN}")
+    similarities = levenshteinedSummed.select([ID_COLUMN + LEFT_COLUMN, ID_COLUMN + RIGHT_COLUMN, LEVENSHTEIN_COLUMN])
     similarities.show()
 
     similaritiesRdd = similarities.rdd.map(
-        lambda row: [int(row[ID_COLUMN + LEFT_COLUMN]), int(row[ID_COLUMN + RIGHT_COLUMN]), float(row[LEVENSHTEIN_COLUMN])])
+        lambda row: [int(row[ID_COLUMN + LEFT_COLUMN]), int(row[ID_COLUMN + RIGHT_COLUMN]), float(row[LEVENSHTEIN_COLUMN])]).cache()
 
     # Clustering
     model = PowerIterationClustering.train(
