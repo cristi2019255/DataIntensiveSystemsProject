@@ -5,7 +5,13 @@ from constants import *
 from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
 
-def greedy_efficient(df: DataFrame, k: int):
+def prepare_windows(df: DataFrame):
+    windows_by_cols = {}
+    for c in df.columns:
+        windows_by_cols[c] = Window().partitionBy(c)
+    return windows_by_cols
+
+def greedy_efficient(df: DataFrame, k: int, windows_by_cols = None):
     print("\nGreedy partitioning...")
     start_time = datetime.now()
     
@@ -14,10 +20,8 @@ def greedy_efficient(df: DataFrame, k: int):
     clusters = [(df.cache(), df.count(), cnf)]        
             
     # partitioning the dataset on each columns
-    windows_by_cols = {}
-    for c in df.columns:
-        windows_by_cols[c] = Window().partitionBy(c)
-                      
+    if windows_by_cols is None:
+        windows_by_cols = prepare_windows(df)                      
             
     # need to split k-1 times.
     for _ in range(k-1):
@@ -60,12 +64,14 @@ def greedy_efficient(df: DataFrame, k: int):
         cnf[max_col_name] = max_col_val
         clusters.append((inPart, max_col_count, cnf))
         clusters.append((outPart, max_cluster[1] - max_col_count, old_cnf))
-
-    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
     
     end_time = datetime.now()
-    print(f"\nTime taken: {end_time - start_time}")
-    return list(map(lambda x: x[0], clusters))
+    run_time = end_time - start_time
+    
+    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
+    
+    print(f"\nTime taken: {run_time}")
+    return run_time, list(map(lambda x: x[0], clusters))
 
 
 def greedy_parameterless(df: DataFrame):
@@ -122,10 +128,12 @@ def greedy_parameterless(df: DataFrame):
         old_cnf = cnf.copy()
         cnf[max_col_name] = max_col_val
         clusters.append((inPart, max_col_count, cnf))
-        clusters.append((outPart, max_cluster[1] - max_col_count, old_cnf))
-        
-    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
+        clusters.append((outPart, max_cluster[1] - max_col_count, old_cnf))            
     
     end_time = datetime.now()
-    print(f"\nTime taken: {end_time - start_time}")
+    run_time = end_time - start_time
+    
+    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
+    
+    print(f"\nTime taken: {run_time}")
     return list(map(lambda x: x[0], clusters))

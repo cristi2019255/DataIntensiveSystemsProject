@@ -36,7 +36,7 @@ def greedy_partitioning(df: DataFrame, k: int):
 
         #print("col_name: ", max_col_name, " col_val: \"",
         #       max_col_val, "\"", " product: ", max_product)
-
+        
         inPart = max_cluster[0].where(F.col(max_col_name) == max_col_val).cache()            
         outPart = max_cluster[0].where(F.col(max_col_name) != max_col_val).cache()
                 
@@ -48,9 +48,11 @@ def greedy_partitioning(df: DataFrame, k: int):
         cnf[max_col_name] = max_col_val
         clusters.append((inPart, max_col_count, cnf))
         clusters.append((outPart, max_cluster[1] - max_col_count, old_cnf))
-
-    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]
     
     end_time = datetime.now()
-    print(f"\nTime taken: {end_time - start_time}")
-    return list(map(lambda x: x[0], clusters))
+    run_time = end_time - start_time
+    
+    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]    
+    
+    print(f"\nTime taken: {run_time}")
+    return run_time, list(map(lambda x: x[0], clusters))
