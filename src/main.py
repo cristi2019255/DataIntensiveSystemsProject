@@ -13,13 +13,13 @@ def main():
     
     dataset_name = dataset_path.split("/")[-1].split(".")[0]
     
-    #df = read_data(spark, limit=100, separator=separator, path= dataset_path)    
+    df = read_data(spark, limit=100, separator=separator, path= dataset_path)    
     
-    #example1(df, sc)
+    example1(df, sc)
         
     #experiemnts(experiment=experiment_greedy, df=df, sc=sc, results_file_path=f"results/{dataset_name}/greedy/results.txt")    
     #experiemnts(experiment=generate_experiment_PIC(df), df=df, sc=sc, results_file_path=f"results/{dataset_name}/PIC/results.txt")
-    plot_experiments(experiments_paths=[f"results/{dataset_name}/greedy/results.txt", f"results/{dataset_name}/PIC/results.txt"])
+    #plot_experiments(experiments_paths=[f"results/{dataset_name}/greedy/results.txt", f"results/{dataset_name}/PIC/results.txt"])
     
     #experiments_scalability(experiment_greedy_scalability, df, sc, results_file_path=f"results/{dataset_name}/greedy/results_scalability.txt", k = 6)
     #experiments_scalability(experiment_PIC_scalability, df, sc, results_file_path=f"results/{dataset_name}/PIC/results_scalability.txt", k = 6)    
