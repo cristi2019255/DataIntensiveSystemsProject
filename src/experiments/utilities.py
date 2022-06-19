@@ -1,13 +1,17 @@
 
 from matplotlib import pyplot as plt
+from datetime import datetime, timedelta
+from pyspark import SparkContext
+from pyspark.sql import DataFrame
 
+from homogenity.entropy import generateEntropyColumnHomogenity
 
 def plot_experiment(results_file_path = "results/PIC/results.txt"):
     with open(file=results_file_path, mode="r") as f:
         lines = f.readlines()        
-        cluster_counts = [int(k) for k in lines[1].split("\n")[0].split(" ")]
-        run_times = [float(r.split(":")[-1]) for r in lines[4].split("\n")[0].split(" ")]
-        homogenity = [round(float(h),3) for h in lines[7].split("\n")[0].split(" ")]
+        cluster_counts = [int(k) for k in lines[3].split("\n")[0].split(" ")]
+        run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]
+        homogenity = [round(float(h),3) for h in lines[9].split("\n")[0].split(" ")]
         f.close()
     
     experiment = results_file_path.split("/")[-2]    
@@ -24,15 +28,30 @@ def plot_experiment(results_file_path = "results/PIC/results.txt"):
     plt.ylabel("Homogeneity")
     plt.plot(cluster_counts, homogenity, label="Homogenity")
     plt.savefig(f"results/{experiment}/homogenity_{experiment}.png")    
+
+
+def plot_experiment_scalability(results_file_path = "results/greedy/results_scalability.txt"):
+    with open(file=results_file_path, mode="r") as f:
+        lines = f.readlines()        
+        data_sizes = [int(k) for k in lines[3].split("\n")[0].split(" ")]
+        run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]        
+        f.close()
     
-def write_results(run_times, homogeneities, cluster_counts, results_file_path = "results/results_PIC.txt"):
+    experiment = results_file_path.split("/")[-2]    
+    
+    plt.title("Run time vs. Data size")
+    plt.xlabel("Data size")
+    plt.ylabel("Run timne (sec)")
+    plt.plot(data_sizes, run_times, label="Run time")
+    plt.savefig(f"results/{experiment}/run_time_{experiment}_scalability.png")
+    plt.clf()    
+
+    
+def write_results(results, results_names, results_file_path = "results/results_PIC.txt"):    
     with open(results_file_path, "w") as f:
-        f.write("Cluster count\n")
-        f.write(" ".join([str(k) for k in cluster_counts]))
-        f.write("\n\nRun time\n")
-        f.write(" ".join([str(r) for r in run_times]))
-        f.write("\n\nHomogenity\n")
-        f.write(" ".join([str(h) for h in homogeneities]))
+        for (result, name) in zip(results, results_names):            
+            f.write(f"\n\n{name}\n")
+            f.write(" ".join([str(k) for k in result]))        
         f.close()
 
 def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/greedy/results.txt"]):
@@ -43,9 +62,9 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
     for experiment_path in experiments_paths:        
         with open(file=experiment_path, mode="r") as f:
             lines = f.readlines()        
-            cluster_counts = [int(k) for k in lines[1].split("\n")[0].split(" ")]
-            run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[4].split("\n")[0].split(" ")]
-            homogenity = [round(float(h),3) for h in lines[7].split("\n")[0].split(" ")]
+            cluster_counts = [int(k) for k in lines[3].split("\n")[0].split(" ")]
+            run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]
+            homogenity = [round(float(h),3) for h in lines[9].split("\n")[0].split(" ")]
             f.close()        
         
         cluster_counts_experiments[experiment_path] = cluster_counts
@@ -68,4 +87,90 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
         plt.plot(cluster_counts_experiments[experiment_path], homogenities_experiments[experiment_path], label=experiment_path.split("/")[-2])    
     plt.legend()
     plt.savefig(f"results/homogenity_comparison.png")    
+
+def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scalability.txt", "results/greedy/results_scalability.txt"]):
+    data_sizes_experiments = {}    
+    run_times_experiments = {}        
     
+    for experiment_path in experiments_paths:        
+        with open(file=experiment_path, mode="r") as f:
+            lines = f.readlines()        
+            data_sizes = [int(s) for s in lines[3].split("\n")[0].split(" ")]
+            run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]            
+            f.close()        
+        
+        data_sizes_experiments[experiment_path] = data_sizes
+        run_times_experiments[experiment_path] = run_times        
+        
+    plt.title("Run time vs. Data size")
+    plt.xlabel("Data size")
+    plt.ylabel("Run timne (sec)")    
+    for experiment_path in experiments_paths:
+        plt.plot(data_sizes_experiments[experiment_path], run_times_experiments[experiment_path], label=experiment_path.split("/")[-2])    
+    plt.legend()
+    plt.savefig(f"results/run_time_comparison_scalability.png")
+    plt.clf()
+    
+def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/PIC/results_scalability.txt", k = 2, max_waiting_time = 60):
+    experiment_name = results_file_path.split("/")[-2]
+    print(f"Experiments {experiment_name} approach for scalability")    
+
+    FRACTION = 0.05
+    run_times = []
+    data_sizes = []
+    
+    run_time = timedelta(seconds=0)
+    max_waiting_time = timedelta(seconds=max_waiting_time)
+    
+    total_data_size = df.count()
+    fraction = FRACTION
+    limit_data_size = int(fraction * total_data_size)
+    
+    
+    while run_time <= max_waiting_time and limit_data_size <= total_data_size:
+        print(f"Current data size: {limit_data_size}")        
+        data_sizes.append(limit_data_size)
+        
+        run_time = experiment(df, limit_data_size, sc, k)
+        run_times.append(run_time)        
+        
+        fraction += FRACTION
+        limit_data_size = int(fraction * total_data_size)
+                        
+    write_results(results=[data_sizes, run_times], results_names=['Data size', 'Run time'], results_file_path=results_file_path)                          
+    plot_experiment_scalability(results_file_path)
+    
+    print("Done!")
+    
+def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/greedy/results.txt"):
+    experiment_name = results_file_path.split("/")[-2]
+    print(f"Experiments {experiment_name} approach")
+    homogeneity_func = generateEntropyColumnHomogenity(df)
+
+    run_times = []
+    homogenities = []
+    cluster_counts = []    
+    k = 2
+    old_delta_homogenity = delta_homogenity = homo = 0                       
+    
+    # Running the experiments
+    while delta_homogenity >= (old_delta_homogenity / 2):
+        
+        run_time, homogenity = experiment(df, sc, homogeneity_func, k)
+        
+        run_times.append(run_time)                
+        homogenities.append(homogenity)        
+        cluster_counts.append(k)
+                
+        if k > 2: 
+            old_delta_homogenity = delta_homogenity
+            delta_homogenity = homogenity - homo
+                        
+        homo = homogenity
+        k+=1
+
+    write_results(results=[cluster_counts, run_times, homogenities], results_names=['Cluster count', 'Run time', 'Homogeneity'], results_file_path=results_file_path)
+    plot_experiment(results_file_path)
+    
+    print(f"Best k:  {(k - 1)}")        
+    print("Done!")

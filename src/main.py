@@ -1,41 +1,25 @@
-import pyspark.sql.functions as F
-from pyspark.sql import SparkSession
-from constants import *
-from experiments.experiments_PIC import experiemnts_PIC
-from experiments.experiments_greedy import experiemnts_greedy
+from constants import DATASET_PATH
+from experiments.experiments_PIC import experiemnt_PIC, experiment_PIC_scalability
+from experiments.experiments_greedy import experiment_greedy, experiment_greedy_scalability
 from examples.simple_flow import example1
-from experiments.utilities import plot_experiments
-
-
-def create_session():
-    # starting Sprak session
-    spark = SparkSession.builder.appName("SimpleApp").getOrCreate()
-    sc = spark.sparkContext
-    return spark, sc
-
-
-def read_data(spark, limit=None, separator = ',', path=DATASET_PATH):
-    # Reading the data from the csv
-    df = spark.read.csv(path, header=True, sep= separator)\
-        .fillna("")\
-        .withColumn(ID_COLUMN, F.monotonically_increasing_id())        
-        
-    if limit is not None:
-        df = df.limit(limit)
-    
-    # Print some data information.
-    print("General data...")
-    df.printSchema()    
-    return df
-
+from experiments.utilities import experiments_scalability, plot_experiments, plot_experiments_scalability
+from utilities import create_session, generate_synthetic_data, read_data
 
 def main():
     spark, sc = create_session()
-    df = read_data(spark, limit=100, separator='|', path= DATASET_PATH)
+    df = read_data(spark, limit=None, separator='|', path= DATASET_PATH)
+    #generate_synthetic_data(sc)
+    
     example1(df, sc)
-    #experiemnts_PIC(df, sc)
-    #experiemnts_greedy(df, sc)
+    
+    #experiemnts(experiment=experiemnt_PIC, df=df, sc=sc, results_file_path="results/PIC/results.txt")
+    #experiemnts(experiment=experiment_greedy, df=df, sc=sc, results_file_path="results/greedy/results.txt")    
     #plot_experiments()
+    
+    #experiments_scalability(experiment_PIC_scalability, df, sc, results_file_path="results/PIC/results_scalability.txt", k = 6)
+    #experiments_scalability(experiment_greedy_scalability, df, sc, results_file_path="results/greedy/results_scalability.txt", k = 6)
+    #plot_experiments_scalability()
+    
     
 
 if __name__ == '__main__':

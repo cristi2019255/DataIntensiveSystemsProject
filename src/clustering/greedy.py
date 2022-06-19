@@ -19,6 +19,11 @@ def greedy_partitioning(df: DataFrame, k: int):
 
         # Loop over all clusters
         for (cluster, cluster_count, cnf) in clusters:                                                                                            
+            
+            # skip the clusters that can not improve the split 
+            if max_col_count != None and cluster_count < max_col_count:
+                continue
+            
             # Loop over all columns in the cluster
             for col_name in cluster.columns:
                 # max column count

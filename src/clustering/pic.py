@@ -11,6 +11,7 @@ from pyspark.mllib.clustering import (PowerIterationClustering,
 
 
 def prepare_similarities_matrix(df:DataFrame):
+    start_time = datetime.now()    
     COLUMN_NAMES = df.columns[:-1]
     joined = df.toDF(*[columnName + LEFT_COLUMN for columnName in COLUMN_NAMES], ID_COLUMN + LEFT_COLUMN).crossJoin(
         df.toDF(*[f"{columnName}{RIGHT_COLUMN}" for columnName in COLUMN_NAMES], ID_COLUMN + RIGHT_COLUMN)).where(f"{ID_COLUMN + LEFT_COLUMN}<{ID_COLUMN + RIGHT_COLUMN}")
@@ -29,8 +30,11 @@ def prepare_similarities_matrix(df:DataFrame):
 
     similaritiesRdd = similarities.rdd.map(
         lambda row: [int(row[ID_COLUMN + LEFT_COLUMN]), int(row[ID_COLUMN + RIGHT_COLUMN]), float(row[LEVENSHTEIN_COLUMN])]).cache()
-
-    return similaritiesRdd
+    
+    end_time = datetime.now()
+    run_time = end_time - start_time
+    
+    return run_time, similaritiesRdd
 
 def train_clusterer(similarities: RDD, sc: SparkContext, k:int, save_model = False):
     # Train the model.
