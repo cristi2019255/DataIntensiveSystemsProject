@@ -1,6 +1,5 @@
-
 from matplotlib import pyplot as plt
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pyspark import SparkContext
 from pyspark.sql import DataFrame
 
@@ -145,22 +144,29 @@ def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = 
     experiment_name = results_file_path.split("/")[-2]
     print(f"Experiments {experiment_name} approach")
     homogeneity_func = generateEntropyColumnHomogenity(df)
+    
+    run_times = []
+    homogenities = []
+    cluster_counts = []                               
 
-    for _ in range(2):
-        run_times = []
-        homogenities = []
-        cluster_counts = []                               
-            
-        # Running the experiments
-        for k in range(2, 22, 2):        
+    run_time, homogenity = experiment(df, sc, homogeneity_func, 2)
+                
+    # Running the experiments        
+    for k in range(2, 22, 2):
+        
+        run_time_total = timedelta(seconds=0)        
+        # Running 3 times for each k in order to get medium run time
+        for _ in range(3):                    
             run_time, homogenity = experiment(df, sc, homogeneity_func, k)
-            
-            run_times.append(run_time)                
-            homogenities.append(homogenity)        
-            cluster_counts.append(k)                        
+            run_time_total += run_time            
+        
+        run_time = run_time_total / 3        
+        
+        run_times.append(run_time)                
+        homogenities.append(homogenity)        
+        cluster_counts.append(k)                        
 
     write_results(results=[cluster_counts, run_times, homogenities], results_names=['Cluster count', 'Run time', 'Homogeneity'], results_file_path=results_file_path)
     plot_experiment(results_file_path)
-    
-    print(f"Best k:  {(k - 1)}")        
+        
     print("Done!")

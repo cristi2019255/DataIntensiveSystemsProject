@@ -18,7 +18,7 @@ def evaluate_partition(homogeneity, partition=None, k = None):
 def experiment_greedy(df:DataFrame, sc:SparkContext, homogeneity_func, k = 2):
     df = df.drop(ID_COLUMN)        
     windows = prepare_windows(df)
-    run_time, partition = greedy_partitioning(df, k) #greedy_efficient(df, k, windows_by_cols=windows)                    
+    run_time, partition = greedy_efficient(df, k, windows_by_cols=windows) # greedy_partitioning(df, k)                   
     homogenity  = evaluate_partition(partition=partition, homogeneity=homogeneity_func, k = k)
     return run_time, homogenity            
     

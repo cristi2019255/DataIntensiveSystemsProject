@@ -57,7 +57,7 @@ def greedy_partitioning(df: DataFrame, k: int):
     end_time = datetime.now()
     run_time = end_time - start_time
     
-    [print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]    
+    #[print(f"cnf: {c[2]}, \t count:{(c[0].count())}") for c in clusters]    
     
     print(f"\nTime taken: {run_time}")
     return run_time, list(map(lambda x: x[0], clusters))

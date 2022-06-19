@@ -8,6 +8,7 @@ def create_session():
     # starting Sprak session
     spark = SparkSession.builder.appName("SimpleApp").getOrCreate()
     sc = spark.sparkContext
+    sc.setLogLevel("WARN")
     return spark, sc
 
 
@@ -24,7 +25,3 @@ def read_data(spark, limit=None, separator = ',', path=DATASET_PATH):
     print("General data...")
     df.printSchema()    
     return df
-
-def generate_synthetic_data(sc:SparkContext, data_path = "data/synthetic_data.csv", size = 100, cols = 3):
-    # Generating synthetic data
-    pass    
