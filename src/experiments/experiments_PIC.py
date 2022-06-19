@@ -16,16 +16,19 @@ def evaluate_partition_clustering(df, homogeneity, partition=None, k = None):
     return avg
 
 
-def experiemnt_PIC(df:DataFrame, sc:SparkContext, homogeneity_func, k = 2):    
-    
+def generate_experiment_PIC(df:DataFrame):
     run_time_preparations, similarities_matrix = prepare_similarities_matrix(df)    
-    run_time_train, model = train_clusterer(similarities_matrix, sc, k)
-        
-    cluster_assignments = model.assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)            
-    homogenity  = evaluate_partition_clustering(df, partition=cluster_assignments, homogeneity=homogeneity_func, k = k)
     
-    return run_time_preparations + run_time_train , homogenity 
+    def experiemnt_PIC(df:DataFrame, sc:SparkContext, homogeneity_func, k = 2):            
+        run_time_train, model = train_clusterer(similarities_matrix, sc, k)
+                
+        cluster_assignments = model.assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)            
+        homogenity  = evaluate_partition_clustering(df, partition=cluster_assignments, homogeneity=homogeneity_func, k = k)
     
+        return run_time_preparations + run_time_train , homogenity 
+    
+    return experiemnt_PIC
+
 def experiment_PIC_scalability(df:DataFrame,  limit_data_size: int, sc: SparkContext, k = 2):
     run_time_preparations, similarities_matrix = prepare_similarities_matrix(df.limit(limit_data_size)) 
     run_time_train, _ = train_clusterer(similarities_matrix, sc, k)        
