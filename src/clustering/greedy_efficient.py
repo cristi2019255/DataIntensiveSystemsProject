@@ -12,7 +12,7 @@ def prepare_windows(df: DataFrame):
     return windows_by_cols
 
 def greedy_efficient(df: DataFrame, k: int, windows_by_cols = None):
-    print("\nGreedy partitioning...")
+    print(f"\nGreedy partitioning for {k} clusters")
     start_time = datetime.now()
     
     df = df.drop(ID_COLUMN)

@@ -5,7 +5,7 @@ from constants import *
 from pyspark.sql import DataFrame
 
 def greedy_partitioning(df: DataFrame, k: int):
-    print("\nGreedy partitioning...")
+    print(f"\nGreedy partitioning for {k} clusters")
     start_time = datetime.now()
 
     cnf = {}

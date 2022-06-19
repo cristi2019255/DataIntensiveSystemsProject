@@ -2,8 +2,10 @@ from pyspark.sql import DataFrame
 from clustering.frequent_sets import pattern_partitioning
 from clustering.greedy import greedy_partitioning
 from clustering.pic import cluster_partitioning
-from constants import CLUSTER_COLUMN, CLUSTER_COUNT, ID_COLUMN
+from constants import CLUSTER_COLUMN, ID_COLUMN
 from homogenity.entropy import generateEntropyColumnHomogenity
+
+CLUSTER_COUNT = 10
 
 def evaluate_partition(df, homogeneity, partition=None, clustering=False):
     homogeneity_sum = 0

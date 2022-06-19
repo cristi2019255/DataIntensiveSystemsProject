@@ -6,6 +6,8 @@ from pyspark.sql import DataFrame
 from homogenity.entropy import generateEntropyColumnHomogenity
 
 def plot_experiment(results_file_path = "results/PIC/results.txt"):
+    results_dir = "/".join([x for x in results_file_path.split("/")[:-2]])
+    
     with open(file=results_file_path, mode="r") as f:
         lines = f.readlines()        
         cluster_counts = [int(k) for k in lines[3].split("\n")[0].split(" ")]
@@ -19,18 +21,20 @@ def plot_experiment(results_file_path = "results/PIC/results.txt"):
     plt.xlabel("Number of clusters")
     plt.ylabel("Run timne (sec)")
     plt.plot(cluster_counts, run_times, label="Run time")
-    plt.savefig(f"results/{experiment}/run_time_{experiment}.png")
+    plt.savefig(f"{results_dir}/{experiment}/run_time_{experiment}.png")
     plt.clf()
     
     plt.title("Homogeneity vs. Cluster count")
     plt.xlabel("Number of clusters")
     plt.ylabel("Homogeneity")
     plt.plot(cluster_counts, homogenity, label="Homogenity")
-    plt.savefig(f"results/{experiment}/homogenity_{experiment}.png")    
+    plt.savefig(f"{results_dir}/{experiment}/homogenity_{experiment}.png")    
     plt.clf()
 
 
 def plot_experiment_scalability(results_file_path = "results/greedy/results_scalability.txt"):
+    results_dir = "/".join([x for x in results_file_path.split("/")[:-2]])
+    
     with open(file=results_file_path, mode="r") as f:
         lines = f.readlines()        
         data_sizes = [int(k) for k in lines[3].split("\n")[0].split(" ")]
@@ -43,7 +47,7 @@ def plot_experiment_scalability(results_file_path = "results/greedy/results_scal
     plt.xlabel("Data size")
     plt.ylabel("Run timne (sec)")
     plt.plot(data_sizes, run_times, label="Run time")
-    plt.savefig(f"results/{experiment}/run_time_{experiment}_scalability.png")
+    plt.savefig(f"{results_dir}/{experiment}/run_time_{experiment}_scalability.png")
     plt.clf()    
 
     
@@ -58,6 +62,8 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
     cluster_counts_experiments = {}    
     run_times_experiments = {}    
     homogenities_experiments = {}
+    
+    results_dir = "/".join([x for x in experiments_paths[0].split("/")[:-2]])
     
     for experiment_path in experiments_paths:        
         with open(file=experiment_path, mode="r") as f:
@@ -77,7 +83,7 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
     for experiment_path in experiments_paths:
         plt.plot(cluster_counts_experiments[experiment_path], run_times_experiments[experiment_path], label=experiment_path.split("/")[-2])    
     plt.legend()
-    plt.savefig(f"results/run_time_comparison.png")
+    plt.savefig(f"{results_dir}/run_time_comparison.png")
     plt.clf()
     
     plt.title("Homogeneity vs. Cluster count")
@@ -86,11 +92,13 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
     for experiment_path in experiments_paths:
         plt.plot(cluster_counts_experiments[experiment_path], homogenities_experiments[experiment_path], label=experiment_path.split("/")[-2])    
     plt.legend()
-    plt.savefig(f"results/homogenity_comparison.png")    
+    plt.savefig(f"{results_dir}/homogenity_comparison.png")    
+    plt.clf()
 
 def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scalability.txt", "results/greedy/results_scalability.txt"]):
     data_sizes_experiments = {}    
     run_times_experiments = {}        
+    results_dir = "/".join([x for x in experiments_paths[0].split("/")[:-2]])
     
     for experiment_path in experiments_paths:        
         with open(file=experiment_path, mode="r") as f:
@@ -108,7 +116,7 @@ def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scala
     for experiment_path in experiments_paths:
         plt.plot(data_sizes_experiments[experiment_path], run_times_experiments[experiment_path], label=experiment_path.split("/")[-2])    
     plt.legend()
-    plt.savefig(f"results/run_time_comparison_scalability.png")
+    plt.savefig(f"{results_dir}/run_time_comparison_scalability.png")
     plt.clf()
     
 def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/PIC/results_scalability.txt", k = 2, max_waiting_time = 60):

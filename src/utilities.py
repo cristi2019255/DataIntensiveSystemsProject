@@ -8,7 +8,7 @@ def create_session():
     # starting Sprak session
     spark = SparkSession.builder.appName("SimpleApp").getOrCreate()
     sc = spark.sparkContext
-    sc.setLogLevel("WARN")
+    sc.setLogLevel("ERROR")
     return spark, sc
 
 
