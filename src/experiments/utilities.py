@@ -1,8 +1,8 @@
+import os
 from matplotlib import pyplot as plt
 from datetime import timedelta
 from pyspark import SparkContext
 from pyspark.sql import DataFrame
-
 from homogenity.entropy import generateEntropyColumnHomogenity
 
 def plot_experiment(results_file_path = "results/PIC/results.txt"):
@@ -51,7 +51,7 @@ def plot_experiment_scalability(results_file_path = "results/greedy/results_scal
     plt.clf()    
 
     
-def write_results(results, results_names, results_file_path = "results/results_PIC.txt"):    
+def write_results(results, results_names, results_file_path = "results/results_PIC.txt"):        
     with open(results_file_path, "w") as f:
         for (result, name) in zip(results, results_names):            
             f.write(f"\n\n{name}\n")
@@ -120,6 +120,7 @@ def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scala
     plt.clf()
     
 def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/PIC/results_scalability.txt", k = 2, max_waiting_time = 60):
+    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
     experiment_name = results_file_path.split("/")[-2]
     print(f"Experiments {experiment_name} approach for scalability")    
 
@@ -150,6 +151,7 @@ def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_
     print("Done!")
     
 def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/greedy/results.txt"):
+    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
     experiment_name = results_file_path.split("/")[-2]
     print(f"Experiments {experiment_name} approach")
     homogeneity_func = generateEntropyColumnHomogenity(df)

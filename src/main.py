@@ -1,4 +1,3 @@
-from constants import DATASET_PATH
 from experiments.experiments_PIC import experiment_PIC_scalability, generate_experiment_PIC
 from experiments.experiments_greedy import experiment_greedy_scalability,  experiment_greedy
 from examples.simple_flow import example1
@@ -12,9 +11,9 @@ def main():
     dataset_path, separator = "data/dunkin_stores.csv", ","
     #dataset_path, separator = "data/syntheticFinances.csv", ","
     
-    dataset_name = dataset_path.split("/")[-1]
+    dataset_name = dataset_path.split("/")[-1].split(".")[0]
     
-    df = read_data(spark, limit=None, separator=separator, path= dataset_path)    
+    df = read_data(spark, limit=100, separator=separator, path= dataset_path)    
     
     #example1(df, sc)
         
