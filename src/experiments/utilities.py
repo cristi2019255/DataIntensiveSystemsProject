@@ -124,8 +124,7 @@ def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_
     
     total_data_size = df.count()
     fraction = FRACTION
-    limit_data_size = int(fraction * total_data_size)
-    
+    limit_data_size = int(fraction * total_data_size)    
     
     while run_time <= max_waiting_time and limit_data_size <= total_data_size:
         print(f"Current data size: {limit_data_size}")        
@@ -149,25 +148,15 @@ def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = 
 
     run_times = []
     homogenities = []
-    cluster_counts = []    
-    k = 2
-    old_delta_homogenity = delta_homogenity = homo = 0                       
-    
-    # Running the experiments
-    while delta_homogenity >= (old_delta_homogenity / 2):
+    cluster_counts = []                               
         
+    # Running the experiments
+    for k in range(2, 22, 2):        
         run_time, homogenity = experiment(df, sc, homogeneity_func, k)
         
         run_times.append(run_time)                
         homogenities.append(homogenity)        
-        cluster_counts.append(k)
-                
-        if k > 2: 
-            old_delta_homogenity = delta_homogenity
-            delta_homogenity = homogenity - homo
-                        
-        homo = homogenity
-        k+=1
+        cluster_counts.append(k)                        
 
     write_results(results=[cluster_counts, run_times, homogenities], results_names=['Cluster count', 'Run time', 'Homogeneity'], results_file_path=results_file_path)
     plot_experiment(results_file_path)
