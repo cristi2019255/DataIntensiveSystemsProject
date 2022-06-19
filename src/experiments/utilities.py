@@ -146,17 +146,18 @@ def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = 
     print(f"Experiments {experiment_name} approach")
     homogeneity_func = generateEntropyColumnHomogenity(df)
 
-    run_times = []
-    homogenities = []
-    cluster_counts = []                               
-        
-    # Running the experiments
-    for k in range(2, 22, 2):        
-        run_time, homogenity = experiment(df, sc, homogeneity_func, k)
-        
-        run_times.append(run_time)                
-        homogenities.append(homogenity)        
-        cluster_counts.append(k)                        
+    for _ in range(2):
+        run_times = []
+        homogenities = []
+        cluster_counts = []                               
+            
+        # Running the experiments
+        for k in range(2, 22, 2):        
+            run_time, homogenity = experiment(df, sc, homogeneity_func, k)
+            
+            run_times.append(run_time)                
+            homogenities.append(homogenity)        
+            cluster_counts.append(k)                        
 
     write_results(results=[cluster_counts, run_times, homogenities], results_names=['Cluster count', 'Run time', 'Homogeneity'], results_file_path=results_file_path)
     plot_experiment(results_file_path)
