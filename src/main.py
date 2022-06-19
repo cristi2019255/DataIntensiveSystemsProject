@@ -7,7 +7,7 @@ from utilities import create_session, generate_synthetic_data, read_data
 
 def main():
     spark, sc = create_session()
-    df = read_data(spark, limit=None, separator='|', path= DATASET_PATH)
+    df = read_data(spark, limit=100, separator='|', path= DATASET_PATH)
     #generate_synthetic_data(sc)
     
     example1(df, sc)

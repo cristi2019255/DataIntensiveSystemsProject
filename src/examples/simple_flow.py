@@ -30,7 +30,7 @@ def evaluate_partition(df, homogeneity, partition=None, clustering=False):
 def example1(df, sc):    
     # Running the experiments
     _, cluster_assignments = cluster_partitioning(df, sc, CLUSTER_COUNT, train=True)    
-    partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
+    _, partition = greedy_partitioning(df.drop(ID_COLUMN), CLUSTER_COUNT)
 
     # Evaluating approaches
     # Generating the homogeneity function

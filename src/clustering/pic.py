@@ -57,7 +57,7 @@ def train_clusterer(similarities: RDD, sc: SparkContext, k:int, save_model = Fal
     return run_time, model
 
 def cluster_partitioning(df, sc, k:int, train = False):
-    similarities_matrix = prepare_similarities_matrix(df)
+    _, similarities_matrix = prepare_similarities_matrix(df)
     if train:
         run_time, model = train_clusterer(similarities_matrix, sc, k, save_model=True) # run it only once to train the model and then comment and just load the model for faster experiments        
     else: 
