@@ -2,7 +2,6 @@
 # Variables
 DATASET_PATH = "data/dbpediaProfiles.csv"
 CLUSTER_MODEL_PATH = "results/PICModel"
-CLUSTER_COUNT = 10
 CLUSTER_ITERATIONS = 10
 
 # Constants
