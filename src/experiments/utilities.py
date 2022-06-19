@@ -27,6 +27,7 @@ def plot_experiment(results_file_path = "results/PIC/results.txt"):
     plt.ylabel("Homogeneity")
     plt.plot(cluster_counts, homogenity, label="Homogenity")
     plt.savefig(f"results/{experiment}/homogenity_{experiment}.png")    
+    plt.clf()
 
 
 def plot_experiment_scalability(results_file_path = "results/greedy/results_scalability.txt"):

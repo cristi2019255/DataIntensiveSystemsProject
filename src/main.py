@@ -1,3 +1,4 @@
+from sklearn import cluster
 from constants import DATASET_PATH
 from experiments.experiments_PIC import experiment_PIC_scalability, generate_experiment_PIC
 from experiments.experiments_greedy import experiment_greedy_scalability,  experiment_greedy
@@ -7,18 +8,18 @@ from utilities import create_session, read_data
 
 def main():
     spark, sc = create_session()
-    df = read_data(spark, limit=100, separator='|', path= DATASET_PATH)    
+    df = read_data(spark, limit=None, separator='|', path= DATASET_PATH)    
     
     #example1(df, sc)
         
     #experiemnts(experiment=experiment_greedy, df=df, sc=sc, results_file_path="results/greedy/results.txt")    
     #experiemnts(experiment=generate_experiment_PIC(df), df=df, sc=sc, results_file_path="results/PIC/results.txt")
-    plot_experiments()
+    #plot_experiments()
     
-    #experiments_scalability(experiment_PIC_scalability, df, sc, results_file_path="results/PIC/results_scalability.txt", k = 6)
+    experiments_scalability(experiment_PIC_scalability, df, sc, results_file_path="results/PIC/results_scalability.txt", k = 6)
     #experiments_scalability(experiment_greedy_scalability, df, sc, results_file_path="results/greedy/results_scalability.txt", k = 6)
     #plot_experiments_scalability()
-        
+
 
 if __name__ == '__main__':
     main()    
