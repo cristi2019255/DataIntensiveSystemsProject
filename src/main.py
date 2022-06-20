@@ -29,17 +29,3 @@ def main():
 
 if __name__ == '__main__':
     main()    
-
-
-"""
-NOTES: advantages for greedy approach are felt when the dataset is large.
-       clustering approach, infeasible for large data > 100
-       for 1000 data points, the PIC algorithm is taking more than 10 mins to run. // stopped after 10 mins // N(N-1)/2 = 1 million for N = 1000 
-       thus, the PIC algorithm is not scalable.
-       pattern set mining is taking ~40 secs to run on the complete dataset.
-       
-TODO:     decide if including the pattern set mining idea is good 
-          experiments and results
-          plots and visualizations of the results          
-"""
-       

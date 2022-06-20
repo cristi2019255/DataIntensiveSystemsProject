@@ -32,26 +32,7 @@ def plot_experiment(results_file_path = "results/PIC/results.txt"):
     plt.ylabel("Homogeneity")
     plt.plot(cluster_counts, homogenity, label="Homogenity")
     plt.savefig(f"{results_dir}/{experiment}/homogenity_{experiment}.png")    
-    plt.clf()
-
-
-def plot_experiment_scalability(results_file_path = "results/greedy/results_scalability.txt"):
-    results_dir = "/".join([x for x in results_file_path.split("/")[:-2]])
-    
-    with open(file=results_file_path, mode="r") as f:
-        lines = f.readlines()        
-        data_sizes = [int(k) for k in lines[3].split("\n")[0].split(" ")]
-        run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]        
-        f.close()
-    
-    experiment = results_file_path.split("/")[-2]    
-    
-    plt.title("Run time vs. Data size")
-    plt.xlabel("Data size")
-    plt.ylabel("Run timne (sec)")
-    plt.plot(data_sizes, run_times, label="Run time")
-    plt.savefig(f"{results_dir}/{experiment}/run_time_{experiment}_scalability.png")
-    plt.clf()    
+    plt.clf()  
 
     
 def write_results(results, results_names, results_file_path = "results/results_PIC.txt"):        
@@ -96,30 +77,6 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
         plt.plot(cluster_counts_experiments[experiment_path], homogenities_experiments[experiment_path], label=experiment_path.split("/")[-2])    
     plt.legend()
     plt.savefig(f"{results_dir}/homogenity_comparison.png")    
-    plt.clf()
-
-def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scalability.txt", "results/greedy/results_scalability.txt"]):
-    data_sizes_experiments = {}    
-    run_times_experiments = {}        
-    results_dir = "/".join([x for x in experiments_paths[0].split("/")[:-2]])
-    
-    for experiment_path in experiments_paths:        
-        with open(file=experiment_path, mode="r") as f:
-            lines = f.readlines()        
-            data_sizes = [int(s) for s in lines[3].split("\n")[0].split(" ")]
-            run_times = [float(r.split(":")[-2])*60 + float(r.split(":")[-1]) for r in lines[6].split("\n")[0].split(" ")]            
-            f.close()        
-        
-        data_sizes_experiments[experiment_path] = data_sizes
-        run_times_experiments[experiment_path] = run_times        
-        
-    plt.title("Run time vs. Data size")
-    plt.xlabel("Data size")
-    plt.ylabel("Run timne (sec)")    
-    for experiment_path in experiments_paths:
-        plt.plot(data_sizes_experiments[experiment_path], run_times_experiments[experiment_path], label=experiment_path.split("/")[-2])    
-    plt.legend()
-    plt.savefig(f"{results_dir}/run_time_comparison_scalability.png")
     plt.clf()
     
 def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, spark:SparkSession, k = 2):        
