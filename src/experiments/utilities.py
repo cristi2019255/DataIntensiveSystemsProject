@@ -4,6 +4,9 @@ from datetime import timedelta
 from pyspark import SparkContext
 from pyspark.sql import DataFrame
 from homogenity.entropy import generateEntropyColumnHomogenity
+from pyspark.sql import SparkSession
+
+from utilities import create_session, read_data
 
 def plot_experiment(results_file_path = "results/PIC/results.txt"):
     results_dir = "/".join([x for x in results_file_path.split("/")[:-2]])
@@ -119,38 +122,12 @@ def plot_experiments_scalability(experiments_paths = ["results/PIC/results_scala
     plt.savefig(f"{results_dir}/run_time_comparison_scalability.png")
     plt.clf()
     
-def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/PIC/results_scalability.txt", k = 2, max_waiting_time = 60):
-    os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
-    experiment_name = results_file_path.split("/")[-2]
-    print(f"Experiments {experiment_name} approach for scalability")    
-
-    FRACTION = 0.05
-    run_times = []
-    data_sizes = []
-    
-    run_time = timedelta(seconds=0)
-    max_waiting_time = timedelta(seconds=max_waiting_time)
-    
-    total_data_size = df.count()
-    fraction = FRACTION
-    limit_data_size = int(fraction * total_data_size)    
-    
-    while run_time <= max_waiting_time and limit_data_size <= total_data_size:
-        print(f"Current data size: {limit_data_size}")        
-        data_sizes.append(limit_data_size)
-        
-        run_time = experiment(df, limit_data_size, sc, k)
-        run_times.append(run_time)        
-        
-        fraction += FRACTION
-        limit_data_size = int(fraction * total_data_size)
-                        
-    write_results(results=[data_sizes, run_times], results_names=['Data size', 'Run time'], results_file_path=results_file_path)                          
-    plot_experiment_scalability(results_file_path)
-    
+def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, spark:SparkSession, k = 2):        
+    print(f"Experiments for scalability")        
+    experiment(df, sc, spark, k)    
     print("Done!")
     
-def experiemnts(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/greedy/results.txt"):
+def experiments(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/greedy/results.txt"):
     os.makedirs(os.path.dirname(results_file_path), exist_ok=True)
     experiment_name = results_file_path.split("/")[-2]
     print(f"Experiments {experiment_name} approach")

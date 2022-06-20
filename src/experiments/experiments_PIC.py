@@ -4,7 +4,7 @@ from constants import CLUSTER_COLUMN, ID_COLUMN
 from experiments.utilities import plot_experiment, write_results
 from homogenity.entropy import generateEntropyColumnHomogenity
 from pyspark.sql import DataFrame
-
+from pyspark.sql import SparkSession
 
 def evaluate_partition_clustering(df, homogeneity, partition=None, k = None):
     homogeneity_sum = 0    
@@ -29,7 +29,11 @@ def generate_experiment_PIC(df:DataFrame):
     
     return experiemnt_PIC
 
-def experiment_PIC_scalability(df:DataFrame,  limit_data_size: int, sc: SparkContext, k = 2):
-    run_time_preparations, similarities_matrix = prepare_similarities_matrix(df.limit(limit_data_size)) 
-    run_time_train, _ = train_clusterer(similarities_matrix, sc, k)        
+def experiment_PIC_scalability(df:DataFrame, sc: SparkContext, spark:SparkSession, k = 2):
+    run_time_preparations, similarities_matrix = prepare_similarities_matrix(df) 
+    run_time_train, _ = train_clusterer(similarities_matrix, sc, k)     
+    
+    # clearing the cache for fair further experiments
+    spark.catalog.clearCache()       
+    
     return run_time_preparations + run_time_train        
