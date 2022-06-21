@@ -22,11 +22,12 @@ def experiment_greedy(df:DataFrame, sc:SparkContext, homogeneity_func, k = 2):
     homogenity  = evaluate_partition(partition=partition, homogeneity=homogeneity_func, k = k)
     return run_time, homogenity            
     
-def experiment_greedy_scalability(df:DataFrame, sc:SparkContext, spark: SparkSession, k = 2):
+def experiment_greedy_scalability(df:DataFrame, sc:SparkContext, spark: SparkSession, homogeneity_func, k = 2):
     df = df.drop(ID_COLUMN)        
     windows = prepare_windows(df)
-    run_time, _ = greedy_efficient(df, k, windows_by_cols=windows)        
-    
+    run_time, partition = greedy_efficient(df, k, windows_by_cols=windows)        
+    homogenity  = evaluate_partition(partition=partition, homogeneity=homogeneity_func, k = k)
+    print(f'Homogenity: {homogenity}')
     # clearing the cache for fair further experiments
     spark.catalog.clearCache()      
       

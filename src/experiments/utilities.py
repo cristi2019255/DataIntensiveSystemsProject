@@ -81,7 +81,8 @@ def plot_experiments(experiments_paths = ["results/PIC/results.txt", "results/gr
     
 def experiments_scalability(experiment, df:DataFrame, sc: SparkContext, spark:SparkSession, k = 2):        
     print(f"Experiments for scalability")        
-    experiment(df, sc, spark, k)    
+    homogenity_func = generateEntropyColumnHomogenity(df)
+    experiment(df, sc, spark, homogenity_func, k)    
     print("Done!")
     
 def experiments(experiment, df:DataFrame, sc: SparkContext, results_file_path = "results/greedy/results.txt"):

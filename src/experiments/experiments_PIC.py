@@ -6,7 +6,7 @@ from homogenity.entropy import generateEntropyColumnHomogenity
 from pyspark.sql import DataFrame
 from pyspark.sql import SparkSession
 
-def evaluate_partition_clustering(df, homogeneity, partition=None, k = None):
+def evaluate_partition(df, homogeneity, partition=None, k = None):
     homogeneity_sum = 0    
     df = df.join(partition, ID_COLUMN)
     for clusterId in range(k):
@@ -23,16 +23,20 @@ def generate_experiment_PIC(df:DataFrame):
         run_time_train, model = train_clusterer(similarities_matrix, sc, k)
                 
         cluster_assignments = model.assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)            
-        homogenity  = evaluate_partition_clustering(df, partition=cluster_assignments, homogeneity=homogeneity_func, k = k)
+        homogenity  = evaluate_partition(df, partition=cluster_assignments, homogeneity=homogeneity_func, k = k)
     
         return run_time_preparations + run_time_train , homogenity 
     
     return experiemnt_PIC
 
-def experiment_PIC_scalability(df:DataFrame, sc: SparkContext, spark:SparkSession, k = 2):
+def experiment_PIC_scalability(df:DataFrame, sc: SparkContext, spark:SparkSession, homogeneity_func, k = 2):
     run_time_preparations, similarities_matrix = prepare_similarities_matrix(df) 
-    run_time_train, _ = train_clusterer(similarities_matrix, sc, k)     
     
+    run_time_train, model = train_clusterer(similarities_matrix, sc, k)                
+    cluster_assignments = model.assignments().toDF().toDF(ID_COLUMN, CLUSTER_COLUMN)            
+    
+    homogenity  = evaluate_partition(df, partition=cluster_assignments, homogeneity=homogeneity_func, k = k)
+    print(f'Homogenity: {homogenity}')
     # clearing the cache for fair further experiments
     spark.catalog.clearCache()       
     

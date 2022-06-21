@@ -1,7 +1,7 @@
 from experiments.experiments_PIC import experiment_PIC_scalability, generate_experiment_PIC
 from experiments.experiments_greedy import experiment_greedy_scalability,  experiment_greedy
 from examples.simple_flow import example1
-from experiments.utilities import experiments, experiments_scalability, plot_experiments, plot_experiments_scalability
+from experiments.utilities import experiments, experiments_scalability, plot_experiments
 from utilities import create_session, read_data
 
 def main():
@@ -15,7 +15,7 @@ def main():
     
     df = read_data(spark, limit=100, separator=separator, path= dataset_path)    
     
-    example1(df, sc)
+    example1(df, sc)    
         
     #experiemnts(experiment=experiment_greedy, df=df, sc=sc, results_file_path=f"results/{dataset_name}/greedy/results.txt")    
     #experiemnts(experiment=generate_experiment_PIC(df), df=df, sc=sc, results_file_path=f"results/{dataset_name}/PIC/results.txt")
