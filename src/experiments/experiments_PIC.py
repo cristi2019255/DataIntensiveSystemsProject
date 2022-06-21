@@ -1,8 +1,6 @@
 from pyspark import SparkContext
 from clustering.pic import prepare_similarities_matrix, train_clusterer
 from constants import CLUSTER_COLUMN, ID_COLUMN
-from experiments.utilities import plot_experiment, write_results
-from homogenity.entropy import generateEntropyColumnHomogenity
 from pyspark.sql import DataFrame
 from pyspark.sql import SparkSession
 
