@@ -40,11 +40,6 @@ def analyse_data(df:DataFrame, dataset_name="data"):
         plot.set_xlabel(f"Column {c} labels")
         plot.set_ylabel("Number of rows")
         plot.set_title(f"Data distribution over column {c}")
-        plt.tick_params(
-                axis='x',          # changes apply to the x-axis
-                which='both',      # both major and minor ticks are affected
-                bottom=False,      # ticks along the bottom edge are off
-                top=False,         # ticks along the top edge are off
-                labelbottom=False) # labels along the bottom edge are off        
+        plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False) 
         plt.savefig(f"{results_path}/{c}.png")
         plt.cla()
