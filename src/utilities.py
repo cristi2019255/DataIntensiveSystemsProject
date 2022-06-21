@@ -36,7 +36,7 @@ def analyse_data(df:DataFrame, dataset_name="data"):
     for c in df.columns:
         dfp = df.select(c).groupBy(c).count().orderBy("count").toPandas()    
     
-        plot = dfp.plot(kind="bar", x=c, y="count", figsize=(10, 7), alpha=0.5, color="blue")        
+        plot = dfp.plot(kind="bar", x=c, y="count", logy = True, figsize=(10, 7), alpha=0.5, color="blue")        
         plot.set_xlabel(f"Column {c} labels")
         plot.set_ylabel("Number of rows")
         plot.set_title(f"Data distribution over column {c}")
