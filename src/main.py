@@ -2,7 +2,7 @@ from experiments.experiments_PIC import experiment_PIC_scalability, generate_exp
 from experiments.experiments_greedy import experiment_greedy_scalability,  experiment_greedy
 from examples.simple_flow import example1
 from experiments.utilities import experiments, experiments_scalability, plot_experiments
-from utilities import create_session, read_data
+from utilities import analyse_data, create_session, read_data
 
 def main():
     spark, sc = create_session()
@@ -13,10 +13,10 @@ def main():
     
     dataset_name = dataset_path.split("/")[-1].split(".")[0]
     
-    df = read_data(spark, limit=100, separator=separator, path= dataset_path)    
+    df = read_data(spark, limit=None, separator=separator, path= dataset_path)    
     
     example1(df, sc)    
-        
+            
     #experiemnts(experiment=experiment_greedy, df=df, sc=sc, results_file_path=f"results/{dataset_name}/greedy/results.txt")    
     #experiemnts(experiment=generate_experiment_PIC(df), df=df, sc=sc, results_file_path=f"results/{dataset_name}/PIC/results.txt")
     #plot_experiments(experiments_paths=[f"results/{dataset_name}/greedy/results.txt", f"results/{dataset_name}/PIC/results.txt"])
@@ -28,4 +28,4 @@ def main():
     sc.stop()
 
 if __name__ == '__main__':
-    main()    
+    main()        

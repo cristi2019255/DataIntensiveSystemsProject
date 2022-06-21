@@ -1,10 +1,11 @@
 
+import os
 from pyspark import SparkContext
 from pyspark.sql import DataFrame
 import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
 from constants import DATASET_PATH, ID_COLUMN
-
+import matplotlib.pyplot as plt
 
 def create_session():
     # starting Sprak session
@@ -26,3 +27,24 @@ def read_data(spark, limit=None, separator = ',', path=DATASET_PATH):
     print("General data...")
     df.printSchema()    
     return df
+
+def analyse_data(df:DataFrame, dataset_name="data"):    
+    results_path = os.path.join("results",dataset_name, "distribution")
+    os.makedirs(results_path, exist_ok=True)
+    df = df.drop(ID_COLUMN)
+    
+    for c in df.columns:
+        dfp = df.select(c).groupBy(c).count().orderBy("count").toPandas()    
+    
+        plot = dfp.plot(kind="bar", x=c, y="count", figsize=(10, 7), alpha=0.5, color="blue")        
+        plot.set_xlabel(f"Column {c} labels")
+        plot.set_ylabel("Number of rows")
+        plot.set_title(f"Data distribution over column {c}")
+        plt.tick_params(
+                axis='x',          # changes apply to the x-axis
+                which='both',      # both major and minor ticks are affected
+                bottom=False,      # ticks along the bottom edge are off
+                top=False,         # ticks along the top edge are off
+                labelbottom=False) # labels along the bottom edge are off        
+        plt.savefig(f"{results_path}/{c}.png")
+        plt.cla()
