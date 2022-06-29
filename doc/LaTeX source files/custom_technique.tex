@@ -1,0 +1,80 @@
+In this paper, we developed a simpler and greedy algorithm geared towards optimising the homogeneity function as defined in section \ref{Section:Homogeneity} that has linear time complexity. This algorithm is designed to split the initial data set on the value of which the split would result in two clusters that are different from each other, but homogeneous within. The process is continued until the number of clusters $k$ given by the user is achieved. 
+The split is done as follows. For each of the current clusters, we consider each of their columns. For each column with $N$ records, we search for the most frequent value in this column and compute a split score as $H\sqrt{N-H}$ where $H$ is the number of tuples that contain the most frequent value (i.e. the frequency). The cluster that has the column with the highest score is split into two clusters, one that contains all the tuples that contain the most frequent value over that column and one with the remaining tuples. The reasoning behind the calculation of the split score is as follows: The closer the frequency $H$ of a value within a column is to the total length $N$ of that column, the larger the fully homogeneous cluster will be. However, splitting on an already homogeneous cluster yields a very low \textit{increase} in the homogeneity, which is the ultimate goal of splitting. Thus, the optimal value frequency is somewhere near half the column length as this will increase the homogeneity the most. Therefore, $H (N - H)$ give us a score that favours columns where the number of tuples with the most frequent value is as close to half of the total number of tuples in that cluster. However, this results in a bias towards splitting on values somewhat more frequent than on those that are somewhat less frequent. Therefore, the square root is taken from the count of the values different from the most frequent value ($N-H$).
+
+The pseudo-code is presented in algorithm \ref{Pseudocode:CustomTechnique}. This algorithm has the complexity $O(k^2m N)$, where $m$ is the number of columns in the data set. Usually $k$ and $m$ are small values compared to $N$. Hence, we can say that our algorithm is linear in the number of records in the data set. Recall that the baseline approach requires the similarity matrix which is $O(N^2)$ complexity (this does not take into account the complexity needed to compute the Levenshtein distance between two tuples). The memory usage for the similarity matrix is $O(N^2)$, our approach as it is presented in the pseudo-code is taking only $O(mN)$. Notice how our approach really starts to excel for big values of $N$. Moreover, notice that all the resulted clusters expect (at most) one can be expressed by a conjunctive query because of the way we split the data set into clusters (see lines 25-27 in algorithm \ref{procedure:makeSplit}). Not only does our approach scales better with the number of data records, but also the actual conjunctive queries can be tracked and used further.
+
+The condition at line 9 in the algorithm \ref{procedure:makeSplit} is used to skip the clusters that can not achieve a higher score than the current one. In order to optimise the process and use the advantages of parallelism in our implementation \footnote{\href{https://github.com/cristi2019255/DataIntensiveSystemsProject}{https://github.com/cristi2019255/DataIntensiveSystemsProject}} we count the number of unique values appearances in a column (line 13 in algorithm \ref{procedure:makeSplit}) by using a window partition over each column of the data set. That is, for each column of the data set we "partitionate" based on the column values, tuples with the same value in that column go in the same node of the SPARK ecosystem. Thus, we can faster count and find the maximum frequency and the corresponding value in a given column. 
+
+\begin{algorithm}
+{\fontsize{8.2pt}{10pt}\selectfont
+\caption{$k$-split greedy algorithm}
+\label{Pseudocode:CustomTechnique}
+\hspace*{\algorithmicindent} \textbf{Input:} $k$ (the number of clusters), $D$ (data set) \\
+\hspace*{\algorithmicindent} \textbf{Output:} $clusters$ (a set of clusters)
+\begin{algorithmic}[1]
+\State $clusters \gets \{D\}$
+\ForAll{$k - 1$}
+    \State \Call{makeSplit}(clusters)
+\EndFor
+\end{algorithmic}
+}
+\end{algorithm}
+
+\begin{algorithm}
+{\fontsize{8.2pt}{10pt}\selectfont
+\caption{makeSplit sub routine}
+\label{procedure:makeSplit}
+\begin{algorithmic}[1]
+    \Procedure{makeSplit}{clusters}
+    \State $bestCluster \gets  null$
+    \State $bestColName \gets null$
+    \State $bestColVal \gets null$
+    \State $maxScore \gets null$
+    \State $H_{max} \gets null$
+    
+    \ForAll{$cluster \gets clusters$}
+        \State $N \gets cluster.count()$
+        \If{$(H_{max} != null) \land (N < H_{max})$}
+            \State continue
+        \EndIf
+        \ForAll{$column \gets cluster.columns$}
+            \State $columnCount \gets cluster.groupBy(column).count()$
+            \State $maxValue, H \gets columnCount.max(x \rightarrow x["count"])$
+            \State $score \gets H \cdot \sqrt{(N-H)}$
+            
+            \If{$(maxScore = null) \vee (score > maxScore)$}
+                \State $bestCluster \gets cluster$
+                \State $bestColName \gets columnName$
+                \State $bestColVal \gets maxValue$
+                \State $maxScore \gets score$
+                \State $H_{max} \gets H$
+            \EndIf
+        \EndFor
+    \EndFor
+    
+    \State $inPart \gets bestCluster.filter(bestColName = bestColVal)$
+    \State $outPart \gets bestCluster.filter(bestColName \neq bestColVal)$
+    
+    \State $clusters \gets (clusters \setminus \{bestCluster\}) \bigcup \{inPart, outPart\}$
+    
+    \EndProcedure
+\end{algorithmic}
+}
+\end{algorithm}
+
+
+Choosing the number of clusters is not always easy for the user. Our algorithm can be easily changed in order to not require the $k$ parameter as input. Instead, we can ask the user what areas he considers to be of interest by specifying the minimal amount of tuples such an area is allowed to have. We can change the algorithm \ref{Pseudocode:CustomTechnique} as follows.
+\begin{algorithm}
+{\fontsize{8.2pt}{10pt}\selectfont
+\caption{$\theta$-split greedy algorithm}
+\label{Pseudocode:CustomTechnique2}
+\hspace*{\algorithmicindent} \textbf{Input:} $\theta$ (a float in range (0,1) which specifies the minimum amount of tuples a cluster should have), $D$ (data set) \\
+\hspace*{\algorithmicindent} \textbf{Output:} $clusters$ (a set of clusters)
+\begin{algorithmic}[1]
+     \State $H_{max} \gets totalSize$
+     \While{ $H_{max} > \theta * totalSize$}
+        \State \Call{makeSplit}(clusters)
+     \EndWhile
+\end{algorithmic}
+}
+\end{algorithm}

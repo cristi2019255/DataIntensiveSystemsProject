@@ -1,0 +1,82 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{biblatex}
+\usepackage{float}
+\usepackage{caption} 
+\usepackage{subcaption}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\usepackage{biblatex}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+
+\addbibresource{sources.bib}
+
+\title{Data partitioning techniques in distributed data intensive systems}
+\author{
+  Grosu, Cristian (0721808)
+  \and
+  Teeuwissen, Jelle (6456944)
+}
+\date{June 2022}
+
+\begin{document}
+
+\maketitle
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Data Intensive Systems}
+\rfoot{Page \thepage}
+
+
+\section{Introduction}
+\label{Section:Introduction}
+\input{introduction}
+
+\section{Related Work}
+\label{Section:RelatedWork}
+\input{related_work}
+
+\section{Homogeneity}
+\label{Section:Homogeneity}
+\input{homogenity}
+
+\section{Baseline}
+\label{Section:Baseline}
+\input{baseline_clustering}
+
+\section{Custom Technique}
+\label{Section:CustomTechnique}
+\input{custom_technique}
+
+\section{Experiments and Results}
+\label{Section:ExperimentsResults}
+\input{experiments_and_results}
+
+\section{Discussions}
+\label{Section:Discussions}
+\input{discussions}
+
+\section{Conclusion}
+\label{Section:Conclusion}
+\input{conclusion}
+
+\printbibliography
+
+\clearpage 
+\twocolumn[\section{Appendix}]
+\label{Section:Appendix}
+\input{appendix}
+
+\end{document}

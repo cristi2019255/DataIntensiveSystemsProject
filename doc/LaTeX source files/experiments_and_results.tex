@@ -1,0 +1,111 @@
+\subsection{Methodology}
+\label{Experiment}
+In order to compare the baseline (section \ref{Section:Baseline}) and custom (section \ref{Section:CustomTechnique}) clustering algorithms effectively, it was decided to compare both the run-time and clustering (homogeneity) performance of both algorithms against different cluster counts $k$, ranging from two to twenty clusters with increments of two. Notice that none of the considered algorithms uses the homogeneity function internally. The user can define its own homogeneity measure, we use the entropy-based homogeneity for algorithms comparison. For each combination of implementation and data set, 3 runs were performed and averaged to achieve more accurate results about the run time. In each case it was decided to limit the total amount of records to 100, to limit the time taken to acquire results.
+
+In addition to these comparisons across cluster count, we ran the algorithm on a fixed cluster count of $k = 6$ with an increasing number of records from the data set. The value of $k = 6$ was chosen based on the homogeneity increase (in the previous experiment). In all the data sets, values near $k=6$ are inflexion points for homogeneity. This experiment is designed in order to compare the scaling ability of both implementations in the length of the data set instead of the total number of clusters.
+
+In our last experiment, we test the $\theta$-split algorithm performance. We can not compare $\theta$-split to the other approaches directly. The performance for different values of $\theta$ is tested and the complete data sets are considered for this experiment. 
+
+
+\subsection{Data}
+In order to compare the run-time and clustering performance between the two algorithms, we used three different data sets. The first of which is the \textbf{dbpediaProfiles}. This data set contains 23182 records with information about movies like title and director (in total 8 columns). The second data set is containing information about 9248 dunkin' donut stores with columns like city, state, and opening times \cite{Dunkin} (22 columns). The third and last data set is a synthetic data set containing 594643 generated transactions between customers and merchants including details from both parties \cite{SyntheticData} (10 columns). 
+
+In the dbpediaProfiles and dunkin store data sets the distribution of data in several columns is near to uniform distribution, whilst in the synthetic data set the data in each column follows distributions that are more distant from the uniform distribution (see Appendix figures \ref{fig:dbpediaProfiles_distribution_analysis} and \ref{fig:synthetic_finance_distribution_analysis}). Therefore we can say from the start that both the baseline and the $k$-split greedy algorithm on the synthetic finance data set will bring higher homogeneity scores compared to the other data sets for the same number of clusters.
+
+To prevent making assumptions about the data it was decided to perform as little pre-processing as possible. Operations like turning everything into lowercase might work in some scenarios, but might be incorrect for other data sets. It was assumed however that "missing" values were in fact not "missing" but empty (as in an empty string). This makes comparing these values with themselves and other values trivial.
+
+\subsection{Setup}
+PySpark was used on a local machine to run the experimental benchmarks. All environment settings were left to their default values.
+The specifications from the computer used to run the performance and  homogeneity benchmarks were as follows:
+\begin{itemize}
+    \item CPU: Intel I7-7500U @ 2.70 GHZ with 4 cores
+    \item Memory: 8 GB
+    \item Spark Version: 3.2.1
+    \item Python Version: 3.8.50
+    \item SPARK:
+    \begin{itemize}
+        \item serializer: KryoSerializer
+        \item driver.memory: 5g
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Results}
+After running the experiments as described in section \ref{Experiment} the homogeneity and average run time for different cluster amounts were plotted for each data set (see Appendix).
+In figure \ref{fig:homogenity_dbpediaProfiles}, \ref{fig:homogenity_dunkin_stores} and \ref{fig:homogenity_syntheticFinance} it can be seen that the greedy algorithm results in a constant improvement in homogeneity when compared to the PIC algorithm. The same phenomenon can be observed in table \ref{tab:scalability_comparison_homogeneity}. When looking at figures \ref{fig:runtime_dbpediaProfiles}, \ref{fig:runtime_dunkin_stores} and \ref{fig:runtime_syntheticFinance} it can be seen that the greedy algorithm performs better than the PIC algorithm for $k=2$, but the greedy run time increases quadratic with an increase of clusters, whilst the PIC algorithm run-time stays the same. Again note that these graphs only represent the performance on a $N = 100$ records. 
+When looking at table \ref{tab:scalability_comparison} however, the run time results tell a different story. Here the run time is compared with the same cluster size of 6, but with an increasing amount of records. Here it can be seen that PIC has a somewhat lower run-time for around 100 records compared to the greedy approach. But higher record counts can take up to forty times longer to run, or even crash due to memory limitations when not limiting the data set size, while the greedy approach does not slow down.
+
+% results about theta split
+In table \ref{tab:results_theta_split} we can see how based on the user preferences (encoded in the values of $\theta$) the algorithm automatically provides partitions with high average homogeneity in a reasonable time. This approach might also be relevant in terms of comparing it with clustering algorithms that do not take $k$ (i.e. the number of clusters) as a parameter. 
+
+\begin{table}[H]
+    \centering
+    \resizebox{0.47\textwidth}{!}{\begin{tabular}{|c|c|c|c|c|c|c|}
+         \hline
+         Data & \multicolumn{2}{|c|}{dbpediaProfiles} &  \multicolumn{2}{|c|}{dunkin stores} & \multicolumn{2}{|c|}{synthetic finances}\\
+         \cline{2-7}
+         Size & Greedy & PIC & Greedy & PIC & Greedy & PIC \\
+         \hline
+         100 & 16.626 & \textbf{14.092} & 32.611 & \textbf{5.199} & 14.971 & \textbf{5.784} \\
+         \hline
+         500 & \textbf{12.630} & 3:36.915 & 18.847 & \textbf{12.867} & 17.273 & \textbf{13.416} \\
+         \hline
+         1000 & \textbf{15.623} & 11:22.837 & \textbf{17.380} & 35.237 & \textbf{16.913} & 32.148\\
+         \hline
+         Total size & \textbf{22.0412} & X & \textbf{23.964} & X & \textbf{50.124} & X \\
+         \hline
+    \end{tabular}
+    }
+    \caption{Scalability comparison (mm:ss.ms) X means out of memory}
+    \label{tab:scalability_comparison}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \resizebox{0.47\textwidth}{!}{\begin{tabular}{|c|c|c|c|c|c|c|}
+         \hline
+         Data & \multicolumn{2}{|c|}{dbpediaProfiles} &  \multicolumn{2}{|c|}{dunkin stores} & \multicolumn{2}{|c|}{synthetic finances}\\
+         \cline{2-7}
+         Size & Greedy & PIC & Greedy & PIC & Greedy & PIC \\
+         \hline
+         100 & \textbf{0.522} & 0.394 & \textbf{0.560} & 0.488 & \textbf{0.796} & 0.681 \\
+         \hline
+         500 & \textbf{0.435} & 0.290 & \textbf{0.493} & 0.419 & \textbf{0.758} & 0.680 \\
+         \hline
+         1000 & \textbf{0.429} & 0.262 & \textbf{0.488} & 0.429 & \textbf{0.751} & 0.677 \\
+         \hline
+         Total size & \textbf{0.320} & X & \textbf{0.466} & X & \textbf{0.578} & X \\
+         \hline
+    \end{tabular}
+    }
+    \caption{Scalability comparison in terms of homogeneity}
+    \label{tab:scalability_comparison_homogeneity}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+         \hline
+         $\theta$ &  resulted clusters & homogeneity & run time (mm:ss.ms)\\
+         \hline
+         \multicolumn{4}{|c|}{dbpediaProfiles} \\
+         \hline
+         0.1 & 3 & 0.235 & 10.0458 \\
+         0.05 &  4 & 0.283 & 23.671 \\
+         \hline
+         \multicolumn{4}{|c|}{dunkin stores} \\
+         \hline
+         0.1 & 9 & 0.516 &  46.936\\
+         0.05 & 12 & 0.553 & 1:16.0125\\
+         \hline
+         \multicolumn{4}{|c|}{syntheticFinances} \\
+         \hline
+         0.1 & 7 &  0.602 & 1:01.0452 \\
+         0.05 & 12 & 0.665 & 2:20.224\\
+         \hline
+    \end{tabular}
+    \caption{Results for $\theta$-split greedy algorithm}
+    \label{tab:results_theta_split}
+\end{table}
+
